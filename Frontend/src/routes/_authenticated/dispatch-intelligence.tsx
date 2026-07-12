@@ -137,6 +137,7 @@ function scorePair(v: Vehicle, d: Driver, req: TripReq): Recommendation {
 
 function DispatchIntelligencePage() {
   const navigate = useNavigate();
+  const pageSize = 5;
   const [req, setReq] = useState<TripReq>({
     source: "",
     destination: "",
@@ -149,6 +150,7 @@ function DispatchIntelligencePage() {
     expectedRevenue: 10000,
   });
   const [computed, setComputed] = useState<Recommendation[] | null>(null);
+  const [page, setPage] = useState(1);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const vQ = useQuery({ queryKey: ["vehicles"], queryFn: vehicleApi.list });
@@ -178,6 +180,8 @@ function DispatchIntelligencePage() {
       ...recs.filter((r) => !r.eligible).slice(0, 3),
     ];
     setComputed(trimmed);
+    setPage(1);
+    setExpanded(null);
     toast.success(`${trimmed.filter((r) => r.eligible).length} eligible assignments found.`);
   }
 
@@ -196,6 +200,16 @@ function DispatchIntelligencePage() {
       } as never,
     });
   }
+
+  const totalRecommendations = computed?.length ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalRecommendations / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedRecommendations = (computed ?? []).slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
+  );
+  const rangeStart = totalRecommendations === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const rangeEnd = Math.min(currentPage * pageSize, totalRecommendations);
 
   return (
     <div className="space-y-6">
@@ -330,15 +344,47 @@ function DispatchIntelligencePage() {
               description="Add vehicles or drivers to run a recommendation."
             />
           )}
-          {computed?.map((rec, idx) => {
+          {computed && computed.length > 0 && (
+            <div className="flex flex-col gap-2 rounded-lg border bg-card p-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                Showing {rangeStart}-{rangeEnd} of {totalRecommendations} suggestion
+                {totalRecommendations === 1 ? "" : "s"}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPage((value) => Math.max(1, value - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <span className="min-w-20 text-center text-xs tabular">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+          {pagedRecommendations.map((rec, idx) => {
             const key = `${rec.vehicle.id}-${rec.driver.id}`;
             const isOpen = expanded === key;
+            const rank = (currentPage - 1) * pageSize + idx + 1;
             return (
               <Card key={key} className={rec.eligible ? "" : "opacity-70 border-dashed"}>
                 <CardContent className="p-5">
                   <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-4">
                     <div className="grid size-12 place-items-center rounded-lg bg-primary/10 text-lg font-bold text-primary">
-                      #{idx + 1}
+                      #{rank}
                     </div>
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
