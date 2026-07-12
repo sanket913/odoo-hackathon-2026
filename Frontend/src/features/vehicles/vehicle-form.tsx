@@ -1,6 +1,9 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { Vehicle } from "@/types/domain";
-import { VEHICLE_TYPES, VEHICLE_TYPE_LABELS, FUEL_TYPES, REGIONS } from "@/lib/constants";
+import { FUEL_TYPES } from "@/lib/constants";
+import { regionApi, vehicleTypeApi } from "@/lib/api/services";
+import { queryKeys } from "@/lib/query-keys";
 
 export type VehicleFormValues = Omit<Vehicle, "id" | "createdAt">;
 
@@ -14,6 +17,11 @@ interface Props {
 }
 
 export function VehicleForm({ initial, onSubmit, submitting }: Props) {
+  const regionsQ = useQuery({ queryKey: queryKeys.regions, queryFn: regionApi.list });
+  const vehicleTypesQ = useQuery({
+    queryKey: queryKeys.vehicleTypes,
+    queryFn: vehicleTypeApi.list,
+  });
   const [values, setValues] = useState<VehicleFormValues>({
     registrationNumber: initial?.registrationNumber ?? "",
     modelName: initial?.modelName ?? "",
@@ -79,9 +87,9 @@ export function VehicleForm({ initial, onSubmit, submitting }: Props) {
           onChange={(e) => set("type", e.target.value as VehicleFormValues["type"])}
           className={inputCls}
         >
-          {VEHICLE_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {VEHICLE_TYPE_LABELS[t]}
+          {(vehicleTypesQ.data ?? []).map((t) => (
+            <option key={t.id} value={t.code}>
+              {t.name}
             </option>
           ))}
         </select>
@@ -92,7 +100,7 @@ export function VehicleForm({ initial, onSubmit, submitting }: Props) {
           onChange={(e) => set("region", e.target.value)}
           className={inputCls}
         >
-          {REGIONS.map((r) => (
+          {(regionsQ.data ?? []).map((r) => (
             <option key={r.id} value={r.id}>
               {r.name}
             </option>

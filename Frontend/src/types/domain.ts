@@ -206,6 +206,18 @@ export interface Region {
   code: string;
 }
 
+export interface MasterVehicleType {
+  id: string;
+  code: VehicleType;
+  name: string;
+}
+
+export interface MasterLicenceCategory {
+  id: string;
+  code: LicenceCategory;
+  name: string;
+}
+
 export interface DispatchEligibilityIssue {
   code: string;
   message: string;

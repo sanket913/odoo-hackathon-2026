@@ -1,5 +1,13 @@
 import { store, nextId, nextNumber } from "@/mocks/store";
-import { delay, MOCK_LATENCY_MS, ApiRuleError, isMockMode, http } from "@/lib/api/client";
+import {
+  delay,
+  MOCK_LATENCY_MS,
+  ApiRuleError,
+  isMockMode,
+  http,
+  unwrapData,
+  unwrapList,
+} from "@/lib/api/client";
 import type {
   Vehicle,
   Driver,
@@ -12,12 +20,20 @@ import type {
   VehicleLocation,
   DashboardKpis,
   DispatchEligibilityIssue,
+  Region,
+  MasterVehicleType,
+  MasterLicenceCategory,
 } from "@/types/domain";
 import { differenceInDays, parseISO } from "date-fns";
 
 async function getData<T>(promise: Promise<{ data: { success: true; data: T } }>): Promise<T> {
   const res = await promise;
-  return res.data.data;
+  return unwrapData<T>(res.data);
+}
+
+async function getList<T>(promise: Promise<{ data: unknown }>): Promise<T[]> {
+  const res = await promise;
+  return unwrapList<T>(res.data);
 }
 
 // ---------------------------------------------------------------------------
@@ -77,7 +93,7 @@ export const authApi = {
 export const userApi = {
   async list(): Promise<User[]> {
     await delay(MOCK_LATENCY_MS, null);
-    if (!isMockMode()) return getData(http.get("/users"));
+    if (!isMockMode()) return getList(http.get("/users"));
     return [...store.users];
   },
   async create(input: Omit<User, "id" | "lastLoginAt"> & { password?: string }): Promise<User> {
@@ -168,13 +184,55 @@ export const settingsApi = {
   },
 };
 
+export const regionApi = {
+  async list(): Promise<Region[]> {
+    await delay(MOCK_LATENCY_MS, null);
+    if (!isMockMode()) return getList(http.get("/regions"));
+    return [
+      { id: "north", code: "N", name: "North" },
+      { id: "south", code: "S", name: "South" },
+      { id: "east", code: "E", name: "East" },
+      { id: "west", code: "W", name: "West" },
+      { id: "central", code: "C", name: "Central" },
+    ];
+  },
+};
+
+export const vehicleTypeApi = {
+  async list(): Promise<MasterVehicleType[]> {
+    await delay(MOCK_LATENCY_MS, null);
+    if (!isMockMode()) return getList(http.get("/vehicle-types"));
+    return [
+      { id: "van", code: "van", name: "Van" },
+      { id: "truck", code: "truck", name: "Truck" },
+      { id: "mini_truck", code: "mini_truck", name: "Mini Truck" },
+      { id: "trailer", code: "trailer", name: "Trailer" },
+      { id: "pickup", code: "pickup", name: "Pickup" },
+    ];
+  },
+};
+
+export const licenceCategoryApi = {
+  async list(): Promise<MasterLicenceCategory[]> {
+    await delay(MOCK_LATENCY_MS, null);
+    if (!isMockMode()) return getList(http.get("/licence-categories"));
+    return [
+      { id: "LMV", code: "LMV", name: "LMV" },
+      { id: "HMV", code: "HMV", name: "HMV" },
+      { id: "HGV", code: "HGV", name: "HGV" },
+      { id: "PSV", code: "PSV", name: "PSV" },
+      { id: "TRANS", code: "TRANS", name: "TRANS" },
+    ];
+  },
+};
+
 // ---------------------------------------------------------------------------
 // Vehicles
 // ---------------------------------------------------------------------------
 export const vehicleApi = {
   async list(): Promise<Vehicle[]> {
     await delay(MOCK_LATENCY_MS, null);
-    if (!isMockMode()) return getData(http.get("/vehicles"));
+    if (!isMockMode()) return getList(http.get("/vehicles"));
     return [...store.vehicles];
   },
   async get(id: string): Promise<Vehicle> {
@@ -229,7 +287,7 @@ export const vehicleApi = {
   },
   async dispatchEligible(): Promise<Vehicle[]> {
     await delay(MOCK_LATENCY_MS, null);
-    if (!isMockMode()) return getData(http.get("/vehicles/dispatch-eligible"));
+    if (!isMockMode()) return getList(http.get("/vehicles/dispatch-eligible"));
     return store.vehicles.filter((v) => v.status === "available");
   },
 };
@@ -240,7 +298,7 @@ export const vehicleApi = {
 export const driverApi = {
   async list(): Promise<Driver[]> {
     await delay(MOCK_LATENCY_MS, null);
-    if (!isMockMode()) return getData(http.get("/drivers"));
+    if (!isMockMode()) return getList(http.get("/drivers"));
     return [...store.drivers];
   },
   async get(id: string): Promise<Driver> {
@@ -279,7 +337,7 @@ export const driverApi = {
   },
   async dispatchEligible(): Promise<Driver[]> {
     await delay(MOCK_LATENCY_MS, null);
-    if (!isMockMode()) return getData(http.get("/drivers/dispatch-eligible"));
+    if (!isMockMode()) return getList(http.get("/drivers/dispatch-eligible"));
     return store.drivers.filter(
       (d) =>
         d.status === "available" && differenceInDays(parseISO(d.licenceExpiry), new Date()) > 0,
@@ -293,7 +351,7 @@ export const driverApi = {
 export const tripApi = {
   async list(): Promise<Trip[]> {
     await delay(MOCK_LATENCY_MS, null);
-    if (!isMockMode()) return getData(http.get("/trips"));
+    if (!isMockMode()) return getList(http.get("/trips"));
     return [...store.trips].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
   },
   async get(id: string): Promise<Trip> {
@@ -320,6 +378,20 @@ export const tripApi = {
     };
     store.trips.unshift(trip);
     return trip;
+  },
+  async evaluateDispatch(input: {
+    tripId?: string;
+    vehicleId?: string;
+    driverId?: string;
+    cargoWeightKg?: number;
+    plannedDistanceKm?: number;
+    source?: string;
+    destination?: string;
+  }): Promise<{ eligible: boolean; issues: DispatchEligibilityIssue[] }> {
+    await delay(MOCK_LATENCY_MS, null);
+    if (!isMockMode()) return getData(http.post("/trips/evaluate-dispatch", input));
+    const issues = evaluateDispatch(input.vehicleId, input.driverId, input.cargoWeightKg);
+    return { eligible: issues.length === 0, issues };
   },
   async dispatch(id: string): Promise<Trip> {
     await delay(MOCK_LATENCY_MS, null);
@@ -590,7 +662,7 @@ function validateTripEligibility(vehicleId: string, driverId: string, cargoWeigh
 export const maintenanceApi = {
   async list(): Promise<Maintenance[]> {
     await delay(MOCK_LATENCY_MS, null);
-    if (!isMockMode()) return getData(http.get("/maintenance"));
+    if (!isMockMode()) return getList(http.get("/maintenance"));
     return [...store.maintenance].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
   },
   async get(id: string): Promise<Maintenance> {
@@ -701,7 +773,7 @@ export const maintenanceApi = {
 export const fuelApi = {
   async list(): Promise<FuelLog[]> {
     await delay(MOCK_LATENCY_MS, null);
-    if (!isMockMode()) return getData(http.get("/fuel-logs"));
+    if (!isMockMode()) return getList(http.get("/fuel-logs"));
     return [...store.fuel].sort((a, b) => (a.date < b.date ? 1 : -1));
   },
   async create(input: Omit<FuelLog, "id" | "createdAt">): Promise<FuelLog> {
@@ -754,7 +826,7 @@ export const fuelApi = {
 export const expenseApi = {
   async list(): Promise<Expense[]> {
     await delay(MOCK_LATENCY_MS, null);
-    if (!isMockMode()) return getData(http.get("/expenses"));
+    if (!isMockMode()) return getList(http.get("/expenses"));
     return [...store.expenses].sort((a, b) => (a.expenseDate < b.expenseDate ? 1 : -1));
   },
   async create(input: Omit<Expense, "id" | "expenseNumber" | "createdAt">): Promise<Expense> {
@@ -801,7 +873,7 @@ export const expenseApi = {
 export const notificationApi = {
   async list(): Promise<AppNotification[]> {
     await delay(MOCK_LATENCY_MS, null);
-    if (!isMockMode()) return getData(http.get("/notifications"));
+    if (!isMockMode()) return getList(http.get("/notifications"));
     return [...store.notifications].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
   },
   async markRead(id: string): Promise<void> {
@@ -848,7 +920,7 @@ function pushNotification(
 export const mapApi = {
   async locations(): Promise<VehicleLocation[]> {
     await delay(MOCK_LATENCY_MS, null);
-    if (!isMockMode()) return getData(http.get("/vehicle-locations"));
+    if (!isMockMode()) return getList(http.get("/vehicle-locations"));
     return store.locations.map((loc) => {
       const v = store.vehicles.find((x) => x.id === loc.vehicleId);
       return v ? { ...loc, status: v.status } : loc;
