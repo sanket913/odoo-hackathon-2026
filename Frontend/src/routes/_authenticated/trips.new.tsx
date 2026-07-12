@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { vehicleApi, driverApi, tripApi, evaluateDispatch } from "@/lib/api/services";
 import { PageHeader } from "@/components/common/states";
@@ -7,6 +7,8 @@ import { REGIONS } from "@/lib/constants";
 import { ApiRuleError } from "@/lib/api/client";
 import { toast } from "sonner";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { invalidateTripDomain } from "@/lib/invalidation";
+import { queryKeys } from "@/lib/query-keys";
 
 export const Route = createFileRoute("/_authenticated/trips/new")({
   head: () => ({ meta: [{ title: "New trip — TransitOps" }] }),
@@ -16,8 +18,14 @@ export const Route = createFileRoute("/_authenticated/trips/new")({
 function NewTripPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const vQ = useQuery({ queryKey: ["vehicles"], queryFn: vehicleApi.list });
-  const dQ = useQuery({ queryKey: ["drivers"], queryFn: driverApi.list });
+  const vQ = useQuery({
+    queryKey: queryKeys.eligibleVehicles,
+    queryFn: vehicleApi.dispatchEligible,
+  });
+  const dQ = useQuery({
+    queryKey: queryKeys.eligibleDrivers,
+    queryFn: driverApi.dispatchEligible,
+  });
 
   const [v, setV] = useState({
     source: "Gandhinagar Depot",
@@ -33,10 +41,28 @@ function NewTripPage() {
     notes: "",
   });
 
-  const issues = useMemo(
-    () => evaluateDispatch(v.vehicleId || undefined, v.driverId || undefined, v.cargoWeightKg),
-    [v.vehicleId, v.driverId, v.cargoWeightKg],
-  );
+  const evalQ = useQuery({
+    queryKey: [
+      "dispatch-evaluation",
+      v.vehicleId,
+      v.driverId,
+      v.cargoWeightKg,
+      v.plannedDistanceKm,
+    ],
+    queryFn: () =>
+      tripApi.evaluateDispatch({
+        vehicleId: v.vehicleId || undefined,
+        driverId: v.driverId || undefined,
+        cargoWeightKg: v.cargoWeightKg,
+        plannedDistanceKm: v.plannedDistanceKm,
+        source: v.source,
+        destination: v.destination,
+      }),
+    enabled: !!v.vehicleId && !!v.driverId,
+  });
+  const issues =
+    evalQ.data?.issues ??
+    evaluateDispatch(v.vehicleId || undefined, v.driverId || undefined, v.cargoWeightKg);
 
   const mut = useMutation({
     mutationFn: () =>
@@ -45,8 +71,7 @@ function NewTripPage() {
         plannedDepartureAt: new Date(v.plannedDepartureAt).toISOString(),
       }),
     onSuccess: (t) => {
-      qc.invalidateQueries({ queryKey: ["trips"] });
-      qc.invalidateQueries({ queryKey: ["dashboard-kpis"] });
+      invalidateTripDomain(qc);
       toast.success(`Trip ${t.tripNumber} created`);
       navigate({ to: "/trips/$tripId", params: { tripId: t.id } });
     },

@@ -20,10 +20,26 @@ function LiveOpsPage() {
     queryKey: ["locations"],
     queryFn: mapApi.locations,
     refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
   });
-  const tQ = useQuery({ queryKey: ["trips"], queryFn: tripApi.list });
-  const vQ = useQuery({ queryKey: ["vehicles"], queryFn: vehicleApi.list });
-  const dQ = useQuery({ queryKey: ["drivers"], queryFn: driverApi.list });
+  const tQ = useQuery({
+    queryKey: ["trips"],
+    queryFn: tripApi.list,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
+  });
+  const vQ = useQuery({
+    queryKey: ["vehicles"],
+    queryFn: vehicleApi.list,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
+  });
+  const dQ = useQuery({
+    queryKey: ["drivers"],
+    queryFn: driverApi.list,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
+  });
 
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const activeTrips = (tQ.data ?? []).filter((t) => t.status === "dispatched");

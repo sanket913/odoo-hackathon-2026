@@ -11,7 +11,12 @@ export const Route = createFileRoute("/_authenticated/notifications")({
 });
 
 function NotificationsPage() {
-  const q = useQuery({ queryKey: ["notifications"], queryFn: notificationApi.list });
+  const q = useQuery({
+    queryKey: ["notifications"],
+    queryFn: notificationApi.list,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+  });
   const qc = useQueryClient();
   const markAll = useMutation({
     mutationFn: notificationApi.markAllRead,

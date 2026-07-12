@@ -5,6 +5,7 @@ import { VehicleForm, type VehicleFormValues } from "@/features/vehicles/vehicle
 import { PageHeader, ErrorState } from "@/components/common/states";
 import { ApiRuleError } from "@/lib/api/client";
 import { toast } from "sonner";
+import { invalidateVehicleDomain } from "@/lib/invalidation";
 
 export const Route = createFileRoute("/_authenticated/fleet/$vehicleId/edit")({
   head: () => ({ meta: [{ title: "Edit vehicle — TransitOps" }] }),
@@ -23,7 +24,7 @@ function EditVehiclePage() {
   const mut = useMutation({
     mutationFn: (input: VehicleFormValues) => vehicleApi.update(vehicleId, input),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["vehicles"] });
+      invalidateVehicleDomain(qc);
       qc.invalidateQueries({ queryKey: ["vehicle", vehicleId] });
       toast.success("Vehicle updated");
       navigate({ to: "/fleet/$vehicleId", params: { vehicleId } });

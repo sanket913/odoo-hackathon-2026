@@ -7,6 +7,7 @@ import { SERVICE_TYPES, SERVICE_TYPE_LABELS } from "@/lib/constants";
 import { ApiRuleError } from "@/lib/api/client";
 import { toast } from "sonner";
 import type { Maintenance } from "@/types/domain";
+import { invalidateMaintenanceDomain } from "@/lib/invalidation";
 
 export const Route = createFileRoute("/_authenticated/maintenance/new")({
   head: () => ({ meta: [{ title: "New maintenance — TransitOps" }] }),
@@ -40,7 +41,7 @@ function NewMaintenancePage() {
         expectedCompletionDate: new Date(v.expectedCompletionDate).toISOString(),
       }),
     onSuccess: (m) => {
-      qc.invalidateQueries();
+      invalidateMaintenanceDomain(qc);
       toast.success(`Maintenance ${m.maintenanceNumber} created — vehicle moved to In Shop.`);
       navigate({ to: "/maintenance/$maintenanceId", params: { maintenanceId: m.id } });
     },

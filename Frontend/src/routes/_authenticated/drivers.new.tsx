@@ -1,12 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { driverApi } from "@/lib/api/services";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { driverApi, licenceCategoryApi, regionApi } from "@/lib/api/services";
 import { PageHeader } from "@/components/common/states";
-import { LICENCE_CATEGORIES, REGIONS } from "@/lib/constants";
 import { ApiRuleError } from "@/lib/api/client";
 import { toast } from "sonner";
 import type { Driver } from "@/types/domain";
+import { invalidateDriverDomain } from "@/lib/invalidation";
+import { queryKeys } from "@/lib/query-keys";
 
 export const Route = createFileRoute("/_authenticated/drivers/new")({
   head: () => ({ meta: [{ title: "Add driver — TransitOps" }] }),
@@ -16,6 +17,11 @@ export const Route = createFileRoute("/_authenticated/drivers/new")({
 function NewDriverPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const regionsQ = useQuery({ queryKey: queryKeys.regions, queryFn: regionApi.list });
+  const licenceQ = useQuery({
+    queryKey: queryKeys.licenceCategories,
+    queryFn: licenceCategoryApi.list,
+  });
   const [values, setValues] = useState({
     fullName: "",
     licenceNumber: "",
@@ -35,7 +41,7 @@ function NewDriverPage() {
     mutationFn: (input: Omit<Driver, "id" | "createdAt" | "tripCompletionRate">) =>
       driverApi.create(input),
     onSuccess: (d) => {
-      qc.invalidateQueries({ queryKey: ["drivers"] });
+      invalidateDriverDomain(qc);
       toast.success(`Driver ${d.fullName} added`);
       navigate({ to: "/drivers/$driverId", params: { driverId: d.id } });
     },
@@ -97,8 +103,10 @@ function NewDriverPage() {
             }
             className={inp}
           >
-            {LICENCE_CATEGORIES.map((c) => (
-              <option key={c}>{c}</option>
+            {(licenceQ.data ?? []).map((c) => (
+              <option key={c.id} value={c.code}>
+                {c.name}
+              </option>
             ))}
           </select>
         </F>
@@ -141,7 +149,7 @@ function NewDriverPage() {
             onChange={(e) => setValues({ ...values, region: e.target.value })}
             className={inp}
           >
-            {REGIONS.map((r) => (
+            {(regionsQ.data ?? []).map((r) => (
               <option key={r.id} value={r.id}>
                 {r.name}
               </option>

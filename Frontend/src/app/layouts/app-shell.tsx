@@ -59,7 +59,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const notifQ = useQuery({
     queryKey: ["notifications"],
     queryFn: notificationApi.list,
-    staleTime: 30_000,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
   const unread = notifQ.data?.filter((n) => !n.read).length ?? 0;
   const vehiclesQ = useQuery({ queryKey: ["vehicles"], queryFn: vehicleApi.list, enabled: !!user });

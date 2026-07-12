@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/common/states";
 import { ApiRuleError } from "@/lib/api/client";
 import { toast } from "sonner";
 import type { Vehicle } from "@/types/domain";
+import { invalidateVehicleDomain } from "@/lib/invalidation";
 
 export const Route = createFileRoute("/_authenticated/fleet/new")({
   head: () => ({ meta: [{ title: "New vehicle — TransitOps" }] }),
@@ -18,7 +19,7 @@ function NewVehiclePage() {
   const mut = useMutation({
     mutationFn: (input: Omit<Vehicle, "id" | "createdAt">) => vehicleApi.create(input),
     onSuccess: (v) => {
-      qc.invalidateQueries({ queryKey: ["vehicles"] });
+      invalidateVehicleDomain(qc);
       toast.success(`Vehicle ${v.registrationNumber} added`);
       navigate({ to: "/fleet/$vehicleId", params: { vehicleId: v.id } });
     },

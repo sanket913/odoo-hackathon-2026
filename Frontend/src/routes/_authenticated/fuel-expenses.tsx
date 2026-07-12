@@ -8,6 +8,7 @@ import { formatCurrency, formatDate, formatNumber } from "@/lib/utils/format";
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS } from "@/lib/constants";
 import { toast } from "sonner";
 import type { Expense } from "@/types/domain";
+import { invalidateCostDomain } from "@/lib/invalidation";
 
 export const Route = createFileRoute("/_authenticated/fuel-expenses")({
   head: () => ({ meta: [{ title: "Fuel & Expenses — TransitOps" }] }),
@@ -56,7 +57,7 @@ function FuelExpensePage() {
             tripId: fuel.tripId || undefined,
           }),
     onSuccess: () => {
-      qc.invalidateQueries();
+      invalidateCostDomain(qc);
       toast.success(fuelEditId ? "Fuel log updated" : "Fuel logged");
       setFuelEditId(null);
       setFuel({
@@ -85,7 +86,7 @@ function FuelExpensePage() {
             tripId: expense.tripId || undefined,
           }),
     onSuccess: () => {
-      qc.invalidateQueries();
+      invalidateCostDomain(qc);
       toast.success(expenseEditId ? "Expense updated" : "Expense added");
       setExpenseEditId(null);
       setExpense({
@@ -102,7 +103,7 @@ function FuelExpensePage() {
   const deleteFuel = useMutation({
     mutationFn: fuelApi.remove,
     onSuccess: () => {
-      qc.invalidateQueries();
+      invalidateCostDomain(qc);
       toast.success("Fuel log deleted");
     },
     onError: (e) => toast.error((e as Error).message),
@@ -110,7 +111,7 @@ function FuelExpensePage() {
   const deleteExpense = useMutation({
     mutationFn: expenseApi.remove,
     onSuccess: () => {
-      qc.invalidateQueries();
+      invalidateCostDomain(qc);
       toast.success("Expense deleted");
     },
     onError: (e) => toast.error((e as Error).message),

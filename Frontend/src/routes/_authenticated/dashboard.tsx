@@ -21,10 +21,15 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function DashboardPage() {
-  const kpisQ = useQuery({ queryKey: ["dashboard-kpis"], queryFn: dashboardApi.kpis });
-  const tripsQ = useQuery({ queryKey: ["trips"], queryFn: tripApi.list });
-  const vehiclesQ = useQuery({ queryKey: ["vehicles"], queryFn: vehicleApi.list });
-  const driversQ = useQuery({ queryKey: ["drivers"], queryFn: driverApi.list });
+  const liveQuery = { refetchInterval: 30_000, refetchOnWindowFocus: true };
+  const kpisQ = useQuery({
+    queryKey: ["dashboard-kpis"],
+    queryFn: dashboardApi.kpis,
+    ...liveQuery,
+  });
+  const tripsQ = useQuery({ queryKey: ["trips"], queryFn: tripApi.list, ...liveQuery });
+  const vehiclesQ = useQuery({ queryKey: ["vehicles"], queryFn: vehicleApi.list, ...liveQuery });
+  const driversQ = useQuery({ queryKey: ["drivers"], queryFn: driverApi.list, ...liveQuery });
 
   const kpis = kpisQ.data;
   const recentTrips = (tripsQ.data ?? []).slice(0, 6);

@@ -1,12 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { driverApi } from "@/lib/api/services";
+import { driverApi, licenceCategoryApi, regionApi } from "@/lib/api/services";
 import { ApiRuleError } from "@/lib/api/client";
 import { EmptyState, PageHeader } from "@/components/common/states";
-import { LICENCE_CATEGORIES, REGIONS } from "@/lib/constants";
 import type { Driver } from "@/types/domain";
 import { toast } from "sonner";
+import { invalidateDriverDomain } from "@/lib/invalidation";
+import { queryKeys } from "@/lib/query-keys";
 
 export const Route = createFileRoute("/_authenticated/drivers/$driverId/edit")({
   head: () => ({ meta: [{ title: "Edit driver - TransitOps" }] }),
@@ -21,6 +22,11 @@ function EditDriverPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["driver", driverId], queryFn: () => driverApi.get(driverId) });
+  const regionsQ = useQuery({ queryKey: queryKeys.regions, queryFn: regionApi.list });
+  const licenceQ = useQuery({
+    queryKey: queryKeys.licenceCategories,
+    queryFn: licenceCategoryApi.list,
+  });
   const [values, setValues] = useState<Driver | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -31,9 +37,8 @@ function EditDriverPage() {
   const mut = useMutation({
     mutationFn: (input: Partial<Driver>) => driverApi.update(driverId, input),
     onSuccess: (d) => {
-      qc.invalidateQueries({ queryKey: ["drivers"] });
+      invalidateDriverDomain(qc);
       qc.invalidateQueries({ queryKey: ["driver", driverId] });
-      qc.invalidateQueries({ queryKey: ["dashboard-kpis"] });
       toast.success(`${d.fullName} updated`);
       navigate({ to: "/drivers/$driverId", params: { driverId } });
     },
@@ -106,8 +111,10 @@ function EditDriverPage() {
             }
             className={inp}
           >
-            {LICENCE_CATEGORIES.map((c) => (
-              <option key={c}>{c}</option>
+            {(licenceQ.data ?? []).map((c) => (
+              <option key={c.id} value={c.code}>
+                {c.name}
+              </option>
             ))}
           </select>
         </F>
@@ -150,7 +157,7 @@ function EditDriverPage() {
             onChange={(e) => setValues({ ...values, region: e.target.value })}
             className={inp}
           >
-            {REGIONS.map((r) => (
+            {(regionsQ.data ?? []).map((r) => (
               <option key={r.id} value={r.id}>
                 {r.name}
               </option>
