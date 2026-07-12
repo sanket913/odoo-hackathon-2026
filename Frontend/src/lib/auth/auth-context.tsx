@@ -7,7 +7,7 @@ interface AuthState {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<User>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -23,14 +23,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let alive = true;
     async function restore() {
       try {
-        const raw = window.localStorage.getItem(USER_KEY);
-        if (raw) setUser(JSON.parse(raw) as User);
         if (!isMockMode()) {
           const { user, token } = await authApi.refresh();
           if (!alive) return;
           window.localStorage.setItem(USER_KEY, JSON.stringify(user));
           window.localStorage.setItem(TOKEN_KEY, token);
           setUser(user);
+        } else {
+          const raw = window.localStorage.getItem(USER_KEY);
+          if (raw) setUser(JSON.parse(raw) as User);
         }
       } catch {
         window.localStorage.removeItem(USER_KEY);
@@ -53,8 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return user;
   };
 
-  const logout = () => {
-    void authApi.logout();
+  const logout = async () => {
+    await authApi.logout().catch(() => undefined);
     window.localStorage.removeItem(USER_KEY);
     window.localStorage.removeItem(TOKEN_KEY);
     setUser(null);
