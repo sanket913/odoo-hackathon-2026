@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   Radio,
@@ -23,7 +23,8 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { can, type Module } from "@/lib/permissions";
 import { AICopilotDrawer } from "@/features/ai-assistant/copilot-drawer";
 import { useQuery } from "@tanstack/react-query";
-import { notificationApi } from "@/lib/api/services";
+import { driverApi, notificationApi, tripApi, vehicleApi } from "@/lib/api/services";
+import { toast } from "sonner";
 
 interface NavItem {
   label: string;
@@ -49,6 +50,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [copilotOpen, setCopilotOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const items = user ? NAV.filter((n) => can(user.role, n.module, "view")) : [];
@@ -59,6 +62,47 @@ export function AppShell({ children }: { children: ReactNode }) {
     staleTime: 30_000,
   });
   const unread = notifQ.data?.filter((n) => !n.read).length ?? 0;
+  const vehiclesQ = useQuery({ queryKey: ["vehicles"], queryFn: vehicleApi.list, enabled: !!user });
+  const driversQ = useQuery({ queryKey: ["drivers"], queryFn: driverApi.list, enabled: !!user });
+  const tripsQ = useQuery({ queryKey: ["trips"], queryFn: tripApi.list, enabled: !!user });
+
+  function runSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const q = search.trim().toLowerCase();
+    if (!q) return;
+    const vehicle = vehiclesQ.data?.find(
+      (v) =>
+        v.registrationNumber.toLowerCase().includes(q) || v.modelName.toLowerCase().includes(q),
+    );
+    if (vehicle) {
+      navigate({ to: "/fleet/$vehicleId", params: { vehicleId: vehicle.id } });
+      setSearch("");
+      return;
+    }
+    const driver = driversQ.data?.find(
+      (d) =>
+        d.fullName.toLowerCase().includes(q) ||
+        d.licenceNumber.toLowerCase().includes(q) ||
+        d.contactNumber.toLowerCase().includes(q),
+    );
+    if (driver) {
+      navigate({ to: "/drivers/$driverId", params: { driverId: driver.id } });
+      setSearch("");
+      return;
+    }
+    const trip = tripsQ.data?.find(
+      (t) =>
+        t.tripNumber.toLowerCase().includes(q) ||
+        t.source.toLowerCase().includes(q) ||
+        t.destination.toLowerCase().includes(q),
+    );
+    if (trip) {
+      navigate({ to: "/trips/$tripId", params: { tripId: trip.id } });
+      setSearch("");
+      return;
+    }
+    toast.info("No matching vehicle, driver or trip found.");
+  }
 
   return (
     <div className="flex min-h-dvh bg-background">
@@ -102,14 +146,16 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             <Menu className="size-5" />
           </button>
-          <div className="relative hidden max-w-md flex-1 md:block">
+          <form onSubmit={runSearch} className="relative hidden max-w-md flex-1 md:block">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               placeholder="Search vehicles, drivers, trips…"
               className="h-9 w-full rounded-md border bg-background pl-8 pr-3 text-sm focus:border-ring focus:outline-hidden focus:ring-2 focus:ring-ring/30"
             />
-          </div>
+          </form>
           <div className="ml-auto flex items-center gap-1">
             <button
               type="button"

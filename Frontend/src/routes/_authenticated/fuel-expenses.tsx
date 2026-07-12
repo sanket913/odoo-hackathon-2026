@@ -31,6 +31,7 @@ function FuelExpensePage() {
     odometerKm: 0,
     fuelStation: "",
   });
+  const [fuelEditId, setFuelEditId] = useState<string | null>(null);
   const [expense, setExpense] = useState({
     vehicleId: "",
     tripId: "",
@@ -39,32 +40,78 @@ function FuelExpensePage() {
     amount: 0,
     expenseDate: new Date().toISOString().slice(0, 10),
   });
+  const [expenseEditId, setExpenseEditId] = useState<string | null>(null);
 
   const fuelMut = useMutation({
     mutationFn: () =>
-      fuelApi.create({
-        ...fuel,
-        date: new Date(fuel.date).toISOString(),
-        tripId: fuel.tripId || undefined,
-      }),
+      fuelEditId
+        ? fuelApi.update(fuelEditId, {
+            ...fuel,
+            date: new Date(fuel.date).toISOString(),
+            tripId: fuel.tripId || undefined,
+          })
+        : fuelApi.create({
+            ...fuel,
+            date: new Date(fuel.date).toISOString(),
+            tripId: fuel.tripId || undefined,
+          }),
     onSuccess: () => {
       qc.invalidateQueries();
-      toast.success("Fuel logged");
-      setFuel({ ...fuel, litres: 0, totalCost: 0 });
+      toast.success(fuelEditId ? "Fuel log updated" : "Fuel logged");
+      setFuelEditId(null);
+      setFuel({
+        vehicleId: "",
+        tripId: "",
+        date: new Date().toISOString().slice(0, 10),
+        litres: 0,
+        totalCost: 0,
+        odometerKm: 0,
+        fuelStation: "",
+      });
     },
     onError: (e) => toast.error((e as Error).message),
   });
   const expMut = useMutation({
     mutationFn: () =>
-      expenseApi.create({
-        ...expense,
-        expenseDate: new Date(expense.expenseDate).toISOString(),
-        tripId: expense.tripId || undefined,
-      }),
+      expenseEditId
+        ? expenseApi.update(expenseEditId, {
+            ...expense,
+            expenseDate: new Date(expense.expenseDate).toISOString(),
+            tripId: expense.tripId || undefined,
+          })
+        : expenseApi.create({
+            ...expense,
+            expenseDate: new Date(expense.expenseDate).toISOString(),
+            tripId: expense.tripId || undefined,
+          }),
     onSuccess: () => {
       qc.invalidateQueries();
-      toast.success("Expense added");
-      setExpense({ ...expense, description: "", amount: 0 });
+      toast.success(expenseEditId ? "Expense updated" : "Expense added");
+      setExpenseEditId(null);
+      setExpense({
+        vehicleId: "",
+        tripId: "",
+        category: "toll",
+        description: "",
+        amount: 0,
+        expenseDate: new Date().toISOString().slice(0, 10),
+      });
+    },
+    onError: (e) => toast.error((e as Error).message),
+  });
+  const deleteFuel = useMutation({
+    mutationFn: fuelApi.remove,
+    onSuccess: () => {
+      qc.invalidateQueries();
+      toast.success("Fuel log deleted");
+    },
+    onError: (e) => toast.error((e as Error).message),
+  });
+  const deleteExpense = useMutation({
+    mutationFn: expenseApi.remove,
+    onSuccess: () => {
+      qc.invalidateQueries();
+      toast.success("Expense deleted");
     },
     onError: (e) => toast.error((e as Error).message),
   });
@@ -131,7 +178,7 @@ function FuelExpensePage() {
             }}
             className="rounded-lg border bg-card p-4 space-y-3"
           >
-            <h3 className="text-sm font-semibold">Log Fuel</h3>
+            <h3 className="text-sm font-semibold">{fuelEditId ? "Edit Fuel Log" : "Log Fuel"}</h3>
             <select
               required
               value={fuel.vehicleId}
@@ -204,8 +251,28 @@ function FuelExpensePage() {
               disabled={fuelMut.isPending}
               className="w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
             >
-              Log fuel
+              {fuelMut.isPending ? "Saving..." : fuelEditId ? "Save fuel log" : "Log fuel"}
             </button>
+            {fuelEditId && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFuelEditId(null);
+                  setFuel({
+                    vehicleId: "",
+                    tripId: "",
+                    date: new Date().toISOString().slice(0, 10),
+                    litres: 0,
+                    totalCost: 0,
+                    odometerKm: 0,
+                    fuelStation: "",
+                  });
+                }}
+                className="w-full rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
+              >
+                Cancel edit
+              </button>
+            )}
           </form>
 
           <div className="rounded-lg border bg-card lg:col-span-2">
@@ -227,6 +294,7 @@ function FuelExpensePage() {
                   <th className="px-3 py-2">Cost</th>
                   <th className="px-3 py-2">₹/L</th>
                   <th className="px-3 py-2">Odo</th>
+                  <th className="px-3 py-2 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -242,6 +310,32 @@ function FuelExpensePage() {
                       {formatCurrency(f.litres > 0 ? f.totalCost / f.litres : 0)}
                     </td>
                     <td className="px-3 py-2 tabular">{formatNumber(f.odometerKm)}</td>
+                    <td className="px-3 py-2 text-right">
+                      <button
+                        onClick={() => {
+                          setFuelEditId(f.id);
+                          setFuel({
+                            vehicleId: f.vehicleId,
+                            tripId: f.tripId ?? "",
+                            date: f.date.slice(0, 10),
+                            litres: f.litres,
+                            totalCost: f.totalCost,
+                            odometerKm: f.odometerKm,
+                            fuelStation: f.fuelStation ?? "",
+                          });
+                        }}
+                        className="mr-2 rounded-md border px-2 py-1 text-xs hover:bg-muted"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => deleteFuel.mutate(f.id)}
+                        disabled={deleteFuel.isPending}
+                        className="rounded-md border px-2 py-1 text-xs hover:bg-muted disabled:opacity-50"
+                      >
+                        Delete
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -257,7 +351,9 @@ function FuelExpensePage() {
             }}
             className="rounded-lg border bg-card p-4 space-y-3"
           >
-            <h3 className="text-sm font-semibold">Add Expense</h3>
+            <h3 className="text-sm font-semibold">
+              {expenseEditId ? "Edit Expense" : "Add Expense"}
+            </h3>
             <select
               required
               value={expense.vehicleId}
@@ -310,8 +406,27 @@ function FuelExpensePage() {
               disabled={expMut.isPending}
               className="w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
             >
-              Add expense
+              {expMut.isPending ? "Saving..." : expenseEditId ? "Save expense" : "Add expense"}
             </button>
+            {expenseEditId && (
+              <button
+                type="button"
+                onClick={() => {
+                  setExpenseEditId(null);
+                  setExpense({
+                    vehicleId: "",
+                    tripId: "",
+                    category: "toll",
+                    description: "",
+                    amount: 0,
+                    expenseDate: new Date().toISOString().slice(0, 10),
+                  });
+                }}
+                className="w-full rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
+              >
+                Cancel edit
+              </button>
+            )}
           </form>
           <div className="rounded-lg border bg-card lg:col-span-2">
             <div className="flex items-center justify-between border-b p-3">
@@ -332,6 +447,7 @@ function FuelExpensePage() {
                   <th className="px-3 py-2">Category</th>
                   <th className="px-3 py-2">Description</th>
                   <th className="px-3 py-2">Amount</th>
+                  <th className="px-3 py-2 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -345,6 +461,31 @@ function FuelExpensePage() {
                     <td className="px-3 py-2 capitalize">{EXPENSE_CATEGORY_LABELS[r.category]}</td>
                     <td className="px-3 py-2">{r.description}</td>
                     <td className="px-3 py-2 tabular">{formatCurrency(r.amount)}</td>
+                    <td className="px-3 py-2 text-right">
+                      <button
+                        onClick={() => {
+                          setExpenseEditId(r.id);
+                          setExpense({
+                            vehicleId: r.vehicleId,
+                            tripId: r.tripId ?? "",
+                            category: r.category,
+                            description: r.description,
+                            amount: r.amount,
+                            expenseDate: r.expenseDate.slice(0, 10),
+                          });
+                        }}
+                        className="mr-2 rounded-md border px-2 py-1 text-xs hover:bg-muted"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => deleteExpense.mutate(r.id)}
+                        disabled={deleteExpense.isPending}
+                        className="rounded-md border px-2 py-1 text-xs hover:bg-muted disabled:opacity-50"
+                      >
+                        Delete
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

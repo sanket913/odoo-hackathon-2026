@@ -80,6 +80,92 @@ export const userApi = {
     if (!isMockMode()) return getData(http.get("/users"));
     return [...store.users];
   },
+  async create(input: Omit<User, "id" | "lastLoginAt"> & { password?: string }): Promise<User> {
+    await delay(MOCK_LATENCY_MS, null);
+    if (!isMockMode()) return getData(http.post("/users", input));
+    if (store.users.some((u) => u.email.toLowerCase() === input.email.toLowerCase())) {
+      throw new ApiRuleError({
+        code: "DUPLICATE_EMAIL",
+        message: "A user with this email already exists.",
+        fields: { email: ["Email must be unique."] },
+      });
+    }
+    const user: User = {
+      id: nextId("u"),
+      name: input.name,
+      email: input.email.toLowerCase(),
+      role: input.role,
+      status: input.status,
+      avatarUrl: input.avatarUrl,
+    };
+    store.users.unshift(user);
+    return user;
+  },
+  async update(
+    id: string,
+    input: Partial<Omit<User, "id" | "lastLoginAt">> & { password?: string },
+  ): Promise<User> {
+    await delay(MOCK_LATENCY_MS, null);
+    if (!isMockMode()) return getData(http.patch(`/users/${id}`, input));
+    const idx = store.users.findIndex((u) => u.id === id);
+    if (idx === -1) throw new ApiRuleError({ code: "NOT_FOUND", message: "User not found." });
+    if (
+      input.email &&
+      store.users.some((u) => u.id !== id && u.email.toLowerCase() === input.email!.toLowerCase())
+    ) {
+      throw new ApiRuleError({
+        code: "DUPLICATE_EMAIL",
+        message: "A user with this email already exists.",
+        fields: { email: ["Email must be unique."] },
+      });
+    }
+    store.users[idx] = {
+      ...store.users[idx],
+      ...input,
+      email: input.email?.toLowerCase() ?? store.users[idx].email,
+    };
+    return store.users[idx];
+  },
+  async deactivate(id: string): Promise<User> {
+    await delay(MOCK_LATENCY_MS, null);
+    if (!isMockMode()) return getData(http.delete(`/users/${id}`));
+    return userApi.update(id, { status: "inactive" });
+  },
+};
+
+export interface OrganizationSettings {
+  id: string;
+  organizationName: string;
+  currency: string;
+  distanceUnit: string;
+  weightUnit: string;
+  timezone: string;
+  dateFormat: string;
+  updatedAt?: string;
+}
+
+const mockSettings: OrganizationSettings = {
+  id: "settings",
+  organizationName: "TransitOps Demo Co.",
+  currency: "INR",
+  distanceUnit: "kilometres",
+  weightUnit: "kilograms",
+  timezone: "Asia/Kolkata",
+  dateFormat: "dd MMM yyyy",
+};
+
+export const settingsApi = {
+  async get(): Promise<OrganizationSettings> {
+    await delay(MOCK_LATENCY_MS, null);
+    if (!isMockMode()) return getData(http.get("/settings"));
+    return { ...mockSettings };
+  },
+  async update(input: Partial<OrganizationSettings>): Promise<OrganizationSettings> {
+    await delay(MOCK_LATENCY_MS, null);
+    if (!isMockMode()) return getData(http.patch("/settings", input));
+    Object.assign(mockSettings, input, { updatedAt: new Date().toISOString() });
+    return { ...mockSettings };
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -648,6 +734,21 @@ export const fuelApi = {
     );
     return rec;
   },
+  async update(id: string, input: Partial<Omit<FuelLog, "id" | "createdAt">>): Promise<FuelLog> {
+    await delay(MOCK_LATENCY_MS, null);
+    if (!isMockMode()) return getData(http.patch(`/fuel-logs/${id}`, input));
+    const idx = store.fuel.findIndex((f) => f.id === id);
+    if (idx === -1) throw new ApiRuleError({ code: "NOT_FOUND", message: "Fuel log not found." });
+    store.fuel[idx] = { ...store.fuel[idx], ...input };
+    return store.fuel[idx];
+  },
+  async remove(id: string): Promise<{ ok: true }> {
+    await delay(MOCK_LATENCY_MS, null);
+    if (!isMockMode()) return getData(http.delete(`/fuel-logs/${id}`));
+    const idx = store.fuel.findIndex((f) => f.id === id);
+    if (idx >= 0) store.fuel.splice(idx, 1);
+    return { ok: true };
+  },
 };
 
 export const expenseApi = {
@@ -673,6 +774,24 @@ export const expenseApi = {
     };
     store.expenses.unshift(rec);
     return rec;
+  },
+  async update(
+    id: string,
+    input: Partial<Omit<Expense, "id" | "expenseNumber" | "createdAt">>,
+  ): Promise<Expense> {
+    await delay(MOCK_LATENCY_MS, null);
+    if (!isMockMode()) return getData(http.patch(`/expenses/${id}`, input));
+    const idx = store.expenses.findIndex((e) => e.id === id);
+    if (idx === -1) throw new ApiRuleError({ code: "NOT_FOUND", message: "Expense not found." });
+    store.expenses[idx] = { ...store.expenses[idx], ...input };
+    return store.expenses[idx];
+  },
+  async remove(id: string): Promise<{ ok: true }> {
+    await delay(MOCK_LATENCY_MS, null);
+    if (!isMockMode()) return getData(http.delete(`/expenses/${id}`));
+    const idx = store.expenses.findIndex((e) => e.id === id);
+    if (idx >= 0) store.expenses.splice(idx, 1);
+    return { ok: true };
   },
 };
 

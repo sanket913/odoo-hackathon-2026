@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="TransitOps">
+  <defs>
+    <linearGradient id="bg" x1="10" y1="8" x2="54" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f172a" />
+      <stop offset="1" stop-color="#155e75" />
+    </linearGradient>
+    <linearGradient id="route" x1="15" y1="47" x2="49" y2="17" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#38bdf8" />
+      <stop offset="1" stop-color="#f97316" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)" />
+  <path
+    d="M17 46 C23 35 34 38 39 27 C42 21 46 18 51 16"
+    fill="none"
+    stroke="url(#route)"
+    stroke-width="5"
+    stroke-linecap="round"
+  />
+  <circle cx="17" cy="46" r="5" fill="#38bdf8" />
+  <circle cx="51" cy="16" r="5" fill="#f97316" />
+  <path d="M18 28h21c5 0 9 4 9 9v7H15V31c0-2 1-3 3-3Z" fill="#f8fafc" />
+  <path d="M38 28h5l5 7h-10v-7Z" fill="#bae6fd" />
+  <path d="M20 33h13v5H20z" fill="#0f766e" opacity=".9" />
+  <circle cx="24" cy="46" r="5" fill="#0f172a" />
+  <circle cx="41" cy="46" r="5" fill="#0f172a" />
+  <circle cx="24" cy="46" r="2" fill="#94a3b8" />
+  <circle cx="41" cy="46" r="2" fill="#94a3b8" />
+</svg>
