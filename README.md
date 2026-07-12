@@ -107,12 +107,6 @@ To enhance the platform beyond the mandatory requirements, we aim to include:
 
 ---
 
-# 🤝 Contributors
-
-Special thanks to every member of **Team TECH_INNOVATORS** for collaborating on this project during **Odoo Hackathon 2026**.
-
----
-
 # 📜 License
 
 This project is licensed under the MIT License.
