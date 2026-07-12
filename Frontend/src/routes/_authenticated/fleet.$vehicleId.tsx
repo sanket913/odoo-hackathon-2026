@@ -11,6 +11,8 @@ import { formatCurrency, formatDate, formatNumber } from "@/lib/utils/format";
 import { VEHICLE_TYPE_LABELS, SERVICE_TYPE_LABELS, EXPENSE_CATEGORY_LABELS } from "@/lib/constants";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { invalidateVehicleDomain } from "@/lib/invalidation";
+import { useAuth } from "@/lib/auth/auth-context";
 
 export const Route = createFileRoute("/_authenticated/fleet/$vehicleId")({
   head: () => ({ meta: [{ title: "Vehicle — TransitOps" }] }),
@@ -21,6 +23,8 @@ function VehicleDetailPage() {
   const { vehicleId } = Route.useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
 
   const vQ = useQuery({
     queryKey: ["vehicle", vehicleId],
@@ -34,8 +38,8 @@ function VehicleDetailPage() {
   const retireMut = useMutation({
     mutationFn: () => vehicleApi.retire(vehicleId),
     onSuccess: () => {
+      invalidateVehicleDomain(qc);
       qc.invalidateQueries({ queryKey: ["vehicle", vehicleId] });
-      qc.invalidateQueries({ queryKey: ["vehicles"] });
       toast.success("Vehicle retired");
     },
   });
@@ -73,7 +77,7 @@ function VehicleDetailPage() {
             >
               Edit
             </Link>
-            {v.status !== "retired" && (
+            {isAdmin && v.status !== "retired" && (
               <button
                 onClick={() => {
                   if (confirm("Retire this vehicle? It will be excluded from all dispatch."))

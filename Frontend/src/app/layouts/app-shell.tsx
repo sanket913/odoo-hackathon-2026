@@ -2,7 +2,9 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   Radio,
+  Sparkles,
   Truck,
+  HeartPulse,
   UserSquare2,
   Route as RouteIcon,
   Wrench,
@@ -36,7 +38,14 @@ interface NavItem {
 const NAV: NavItem[] = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard, module: "dashboard" },
   { label: "Live Operations", to: "/live-operations", icon: Radio, module: "live_operations" },
+  {
+    label: "Dispatch Intelligence",
+    to: "/dispatch-intelligence",
+    icon: Sparkles,
+    module: "dispatch_intelligence",
+  },
   { label: "Fleet", to: "/fleet", icon: Truck, module: "fleet" },
+  { label: "Fleet Health", to: "/fleet-health", icon: HeartPulse, module: "fleet_health" },
   { label: "Drivers", to: "/drivers", icon: UserSquare2, module: "drivers" },
   { label: "Trips", to: "/trips", icon: RouteIcon, module: "trips" },
   { label: "Maintenance", to: "/maintenance", icon: Wrench, module: "maintenance" },

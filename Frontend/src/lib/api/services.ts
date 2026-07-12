@@ -160,6 +160,40 @@ export interface OrganizationSettings {
   updatedAt?: string;
 }
 
+export interface IntegrationSettingsStatus {
+  environment: string;
+  api: {
+    clientUrl: string;
+    corsOrigins: string[];
+    cookieSecure: boolean;
+  };
+  ai: {
+    provider: string;
+    configured: boolean;
+    model: string;
+    requiredKeys: string[];
+  };
+  uploads: {
+    configured: boolean;
+    uploadDir: string;
+    maxUploadSizeMb: number;
+    requiredKeys: string[];
+  };
+  email: {
+    configured: boolean;
+    host: string;
+    port: string;
+    from: string;
+    requiredKeys: string[];
+  };
+  maps: {
+    configured: boolean;
+    tileUrl: string;
+    attribution: string;
+    requiredKeys: string[];
+  };
+}
+
 const mockSettings: OrganizationSettings = {
   id: "settings",
   organizationName: "TransitOps Demo Co.",
@@ -181,6 +215,43 @@ export const settingsApi = {
     if (!isMockMode()) return getData(http.patch("/settings", input));
     Object.assign(mockSettings, input, { updatedAt: new Date().toISOString() });
     return { ...mockSettings };
+  },
+  async integrations(): Promise<IntegrationSettingsStatus> {
+    await delay(MOCK_LATENCY_MS, null);
+    if (!isMockMode()) return getData(http.get("/settings/integrations"));
+    return {
+      environment: "mock",
+      api: {
+        clientUrl: "http://localhost:5173",
+        corsOrigins: ["http://localhost:5173"],
+        cookieSecure: false,
+      },
+      ai: {
+        provider: "Groq",
+        configured: true,
+        model: "mock-copilot",
+        requiredKeys: ["GROQ_API_KEY", "GROQ_MODEL"],
+      },
+      uploads: {
+        configured: true,
+        uploadDir: "uploads",
+        maxUploadSizeMb: 5,
+        requiredKeys: ["UPLOAD_DIR", "MAX_UPLOAD_SIZE_MB"],
+      },
+      email: {
+        configured: false,
+        host: "",
+        port: "",
+        from: "",
+        requiredKeys: ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS", "EMAIL_FROM"],
+      },
+      maps: {
+        configured: true,
+        tileUrl: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        attribution: "OpenStreetMap contributors",
+        requiredKeys: ["VITE_MAP_TILE_URL", "VITE_MAP_ATTRIBUTION"],
+      },
+    };
   },
 };
 
@@ -308,7 +379,9 @@ export const driverApi = {
     if (!d) throw new ApiRuleError({ code: "NOT_FOUND", message: "Driver not found." });
     return d;
   },
-  async create(input: Omit<Driver, "id" | "createdAt" | "tripCompletionRate">): Promise<Driver> {
+  async create(
+    input: Omit<Driver, "id" | "createdAt" | "tripCompletionRate" | "safetyScore">,
+  ): Promise<Driver> {
     await delay(MOCK_LATENCY_MS, null);
     if (!isMockMode()) return getData(http.post("/drivers", input));
     if (store.drivers.some((d) => d.licenceNumber === input.licenceNumber)) {
@@ -320,6 +393,7 @@ export const driverApi = {
     }
     const driver: Driver = {
       ...input,
+      safetyScore: calculateMockDriverSafetyScore(input),
       id: nextId("d"),
       tripCompletionRate: 0,
       createdAt: new Date().toISOString(),
@@ -327,13 +401,19 @@ export const driverApi = {
     store.drivers.push(driver);
     return driver;
   },
-  async update(id: string, patch: Partial<Driver>): Promise<Driver> {
+  async update(id: string, patch: Partial<Omit<Driver, "safetyScore">>): Promise<Driver> {
     await delay(MOCK_LATENCY_MS, null);
     if (!isMockMode()) return getData(http.patch(`/drivers/${id}`, patch));
     const idx = store.drivers.findIndex((d) => d.id === id);
     if (idx === -1) throw new ApiRuleError({ code: "NOT_FOUND", message: "Driver not found." });
     store.drivers[idx] = { ...store.drivers[idx], ...patch };
+    store.drivers[idx].safetyScore = calculateMockDriverSafetyScore(store.drivers[idx]);
     return store.drivers[idx];
+  },
+  async remove(id: string): Promise<Driver> {
+    await delay(MOCK_LATENCY_MS, null);
+    if (!isMockMode()) return getData(http.delete(`/drivers/${id}`));
+    return driverApi.update(id, { status: "suspended" });
   },
   async dispatchEligible(): Promise<Driver[]> {
     await delay(MOCK_LATENCY_MS, null);
@@ -344,6 +424,33 @@ export const driverApi = {
     );
   },
 };
+
+function calculateMockDriverSafetyScore(input: {
+  licenceExpiry: string;
+  licenceCategory: string;
+  contactNumber: string;
+  email?: string;
+  emergencyContact?: string;
+  status?: string;
+}) {
+  let score = 100;
+  const daysUntilExpiry = differenceInDays(parseISO(input.licenceExpiry), new Date());
+  if (daysUntilExpiry <= 0) score -= 45;
+  else if (daysUntilExpiry <= 30) score -= 30;
+  else if (daysUntilExpiry <= 90) score -= 18;
+  else if (daysUntilExpiry <= 180) score -= 8;
+
+  if (input.status === "suspended") score -= 35;
+  if (input.status === "off_duty") score -= 5;
+  if (input.status === "on_trip") score -= 3;
+
+  if (!input.emergencyContact?.trim()) score -= 8;
+  if (!input.email?.trim()) score -= 3;
+  if (input.contactNumber.replace(/\D/g, "").length < 10) score -= 8;
+  if (["HMV", "HGV", "TRANS"].includes(input.licenceCategory)) score += 3;
+
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
 
 // ---------------------------------------------------------------------------
 // Trips  ---  business rules enforced here mimic the backend
@@ -360,6 +467,23 @@ export const tripApi = {
     const t = store.trips.find((x) => x.id === id);
     if (!t) throw new ApiRuleError({ code: "NOT_FOUND", message: "Trip not found." });
     return t;
+  },
+  async update(
+    id: string,
+    patch: Partial<Omit<Trip, "id" | "tripNumber" | "status" | "createdAt">>,
+  ): Promise<Trip> {
+    await delay(MOCK_LATENCY_MS, null);
+    if (!isMockMode()) return getData(http.patch(`/trips/${id}`, patch));
+    const idx = store.trips.findIndex((t) => t.id === id);
+    if (idx === -1) throw new ApiRuleError({ code: "NOT_FOUND", message: "Trip not found." });
+    if (store.trips[idx].status !== "draft") {
+      throw new ApiRuleError({
+        code: "INVALID_TRANSITION",
+        message: "Only draft trips may be edited.",
+      });
+    }
+    store.trips[idx] = { ...store.trips[idx], ...patch };
+    return store.trips[idx];
   },
   async create(input: Omit<Trip, "id" | "tripNumber" | "status" | "createdAt">): Promise<Trip> {
     await delay(MOCK_LATENCY_MS, null);
@@ -549,6 +673,23 @@ export const tripApi = {
       "trip",
     );
     return trip;
+  },
+  async remove(id: string): Promise<Trip | { ok: true }> {
+    await delay(MOCK_LATENCY_MS, null);
+    if (!isMockMode()) return getData(http.delete(`/trips/${id}`));
+    const trip = mustGetTrip(id);
+    if (trip.status === "completed") {
+      throw new ApiRuleError({
+        code: "INVALID_TRANSITION",
+        message: "Completed trips are retained for audit history.",
+      });
+    }
+    if (trip.status === "dispatched") {
+      return tripApi.cancel(id, "Deleted by admin");
+    }
+    const idx = store.trips.findIndex((t) => t.id === id);
+    if (idx >= 0) store.trips.splice(idx, 1);
+    return { ok: true };
   },
 };
 
@@ -764,6 +905,27 @@ export const maintenanceApi = {
       vehicle.lastServiceDate = input.completionDate;
     }
     return rec;
+  },
+  async remove(id: string): Promise<{ ok: true }> {
+    await delay(MOCK_LATENCY_MS, null);
+    if (!isMockMode()) return getData(http.delete(`/maintenance/${id}`));
+    const idx = store.maintenance.findIndex((m) => m.id === id);
+    if (idx === -1)
+      throw new ApiRuleError({ code: "NOT_FOUND", message: "Maintenance record not found." });
+    const rec = store.maintenance[idx];
+    if (rec.status === "completed") {
+      throw new ApiRuleError({
+        code: "INVALID_TRANSITION",
+        message: "Completed maintenance records are retained for audit history.",
+      });
+    }
+    store.maintenance.splice(idx, 1);
+    const vehicle = store.vehicles.find((v) => v.id === rec.vehicleId);
+    const stillActive = store.maintenance.some(
+      (m) => m.vehicleId === rec.vehicleId && (m.status === "open" || m.status === "in_progress"),
+    );
+    if (!stillActive && vehicle && vehicle.status === "in_shop") vehicle.status = "available";
+    return { ok: true };
   },
 };
 
@@ -1015,9 +1177,12 @@ export const analyticsApi = {
 // AI Copilot (frontend UI only — real completion happens on the backend)
 // ---------------------------------------------------------------------------
 export const aiApi = {
-  async ask(prompt: string): Promise<{ answer: string; sources: string[] }> {
+  async ask(
+    prompt: string,
+    history: { role: "user" | "assistant"; content: string }[] = [],
+  ): Promise<{ answer: string; sources: string[] }> {
     await delay(600, null);
-    if (!isMockMode()) return getData(http.post("/ai/operations-summary", { prompt }));
+    if (!isMockMode()) return getData(http.post("/ai/operations-summary", { prompt, history }));
     const availableCount = store.vehicles.filter((v) => v.status === "available").length;
     const onTrip = store.vehicles.filter((v) => v.status === "on_trip").length;
     const inShop = store.vehicles.filter((v) => v.status === "in_shop").length;

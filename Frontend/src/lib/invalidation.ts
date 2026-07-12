@@ -6,14 +6,26 @@ export function invalidateVehicleDomain(qc: QueryClient) {
   qc.invalidateQueries({ queryKey: queryKeys.eligibleVehicles });
   qc.invalidateQueries({ queryKey: queryKeys.dashboard });
   qc.invalidateQueries({ queryKey: queryKeys.locations });
+  qc.invalidateQueries({ queryKey: queryKeys.liveOperationsLocations });
+  qc.invalidateQueries({ queryKey: queryKeys.liveOperationsExceptions });
+  qc.invalidateQueries({ queryKey: queryKeys.liveOperationsTimeline });
+  qc.invalidateQueries({ queryKey: queryKeys.dispatchIntelligence });
+  qc.invalidateQueries({ queryKey: queryKeys.fleetHealth });
   qc.invalidateQueries({ queryKey: queryKeys.analyticsSummary });
   qc.invalidateQueries({ queryKey: queryKeys.analyticsByVehicle });
+  qc.invalidateQueries({ queryKey: queryKeys.notifications });
 }
 
 export function invalidateDriverDomain(qc: QueryClient) {
   qc.invalidateQueries({ queryKey: queryKeys.drivers });
   qc.invalidateQueries({ queryKey: queryKeys.eligibleDrivers });
   qc.invalidateQueries({ queryKey: queryKeys.dashboard });
+  qc.invalidateQueries({ queryKey: queryKeys.trips });
+  qc.invalidateQueries({ queryKey: queryKeys.liveOperationsLocations });
+  qc.invalidateQueries({ queryKey: queryKeys.liveOperationsExceptions });
+  qc.invalidateQueries({ queryKey: queryKeys.liveOperationsTimeline });
+  qc.invalidateQueries({ queryKey: queryKeys.dispatchIntelligence });
+  qc.invalidateQueries({ queryKey: queryKeys.notifications });
 }
 
 export function invalidateTripDomain(qc: QueryClient) {
@@ -24,9 +36,16 @@ export function invalidateTripDomain(qc: QueryClient) {
   qc.invalidateQueries({ queryKey: queryKeys.eligibleDrivers });
   qc.invalidateQueries({ queryKey: queryKeys.dashboard });
   qc.invalidateQueries({ queryKey: queryKeys.locations });
+  qc.invalidateQueries({ queryKey: queryKeys.liveOperationsLocations });
+  qc.invalidateQueries({ queryKey: queryKeys.liveOperationsExceptions });
+  qc.invalidateQueries({ queryKey: queryKeys.liveOperationsTimeline });
+  qc.invalidateQueries({ queryKey: queryKeys.dispatchIntelligence });
+  qc.invalidateQueries({ queryKey: queryKeys.fleetHealth });
   qc.invalidateQueries({ queryKey: queryKeys.analyticsSummary });
   qc.invalidateQueries({ queryKey: queryKeys.analyticsByVehicle });
   qc.invalidateQueries({ queryKey: queryKeys.notifications });
+  qc.invalidateQueries({ queryKey: queryKeys.fuel });
+  qc.invalidateQueries({ queryKey: queryKeys.expenses });
 }
 
 export function invalidateMaintenanceDomain(qc: QueryClient) {
@@ -35,6 +54,11 @@ export function invalidateMaintenanceDomain(qc: QueryClient) {
   qc.invalidateQueries({ queryKey: queryKeys.eligibleVehicles });
   qc.invalidateQueries({ queryKey: queryKeys.dashboard });
   qc.invalidateQueries({ queryKey: queryKeys.locations });
+  qc.invalidateQueries({ queryKey: queryKeys.liveOperationsLocations });
+  qc.invalidateQueries({ queryKey: queryKeys.liveOperationsExceptions });
+  qc.invalidateQueries({ queryKey: queryKeys.liveOperationsTimeline });
+  qc.invalidateQueries({ queryKey: queryKeys.dispatchIntelligence });
+  qc.invalidateQueries({ queryKey: queryKeys.fleetHealth });
   qc.invalidateQueries({ queryKey: queryKeys.analyticsSummary });
   qc.invalidateQueries({ queryKey: queryKeys.analyticsByVehicle });
   qc.invalidateQueries({ queryKey: queryKeys.notifications });
@@ -45,6 +69,8 @@ export function invalidateCostDomain(qc: QueryClient) {
   qc.invalidateQueries({ queryKey: queryKeys.expenses });
   qc.invalidateQueries({ queryKey: queryKeys.vehicles });
   qc.invalidateQueries({ queryKey: queryKeys.trips });
+  qc.invalidateQueries({ queryKey: queryKeys.dashboard });
+  qc.invalidateQueries({ queryKey: queryKeys.fleetHealth });
   qc.invalidateQueries({ queryKey: queryKeys.analyticsSummary });
   qc.invalidateQueries({ queryKey: queryKeys.analyticsByVehicle });
   qc.invalidateQueries({ queryKey: queryKeys.notifications });

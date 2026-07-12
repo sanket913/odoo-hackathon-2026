@@ -3,12 +3,14 @@ import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fuelApi, expenseApi, vehicleApi, tripApi, analyticsApi } from "@/lib/api/services";
 import { PageHeader } from "@/components/common/states";
+import { DataTable, type DataTableColumn } from "@/components/common/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/utils/format";
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS } from "@/lib/constants";
 import { toast } from "sonner";
-import type { Expense } from "@/types/domain";
+import type { Expense, FuelLog, Trip, Vehicle } from "@/types/domain";
 import { invalidateCostDomain } from "@/lib/invalidation";
+import { useAuth } from "@/lib/auth/auth-context";
 
 export const Route = createFileRoute("/_authenticated/fuel-expenses")({
   head: () => ({ meta: [{ title: "Fuel & Expenses — TransitOps" }] }),
@@ -22,6 +24,8 @@ function FuelExpensePage() {
   const tQ = useQuery({ queryKey: ["trips"], queryFn: tripApi.list });
   const sQ = useQuery({ queryKey: ["analytics-summary"], queryFn: analyticsApi.summary });
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
 
   const [fuel, setFuel] = useState({
     vehicleId: "",
@@ -33,6 +37,12 @@ function FuelExpensePage() {
     fuelStation: "",
   });
   const [fuelEditId, setFuelEditId] = useState<string | null>(null);
+  const [fuelFilters, setFuelFilters] = useState({
+    vehicleId: "all",
+    tripId: "all",
+    from: "",
+    to: "",
+  });
   const [expense, setExpense] = useState({
     vehicleId: "",
     tripId: "",
@@ -42,6 +52,12 @@ function FuelExpensePage() {
     expenseDate: new Date().toISOString().slice(0, 10),
   });
   const [expenseEditId, setExpenseEditId] = useState<string | null>(null);
+  const [expenseFilters, setExpenseFilters] = useState({
+    vehicleId: "all",
+    category: "all",
+    from: "",
+    to: "",
+  });
 
   const fuelMut = useMutation({
     mutationFn: () =>
@@ -123,17 +139,218 @@ function FuelExpensePage() {
   );
   const inp = "h-10 w-full rounded-md border bg-background px-3 text-sm";
 
+  const filteredFuel = useMemo(() => {
+    return (fQ.data ?? []).filter((row) => {
+      const day = row.date.slice(0, 10);
+      if (fuelFilters.vehicleId !== "all" && row.vehicleId !== fuelFilters.vehicleId) return false;
+      if (fuelFilters.tripId !== "all" && (row.tripId ?? "") !== fuelFilters.tripId) return false;
+      if (fuelFilters.from && day < fuelFilters.from) return false;
+      if (fuelFilters.to && day > fuelFilters.to) return false;
+      return true;
+    });
+  }, [fQ.data, fuelFilters]);
+
+  const filteredExpenses = useMemo(() => {
+    return (eQ.data ?? []).filter((row) => {
+      const day = row.expenseDate.slice(0, 10);
+      if (expenseFilters.vehicleId !== "all" && row.vehicleId !== expenseFilters.vehicleId)
+        return false;
+      if (expenseFilters.category !== "all" && row.category !== expenseFilters.category)
+        return false;
+      if (expenseFilters.from && day < expenseFilters.from) return false;
+      if (expenseFilters.to && day > expenseFilters.to) return false;
+      return true;
+    });
+  }, [eQ.data, expenseFilters]);
+
+  const fuelColumns: DataTableColumn<FuelLog>[] = [
+    {
+      key: "date",
+      header: "Date",
+      accessor: (f) => f.date,
+      sortable: true,
+      render: (f) => <span className="text-xs">{formatDate(f.date)}</span>,
+    },
+    {
+      key: "vehicle",
+      header: "Vehicle",
+      accessor: (f) => vQ.data?.find((v) => v.id === f.vehicleId)?.registrationNumber ?? "",
+      sortable: true,
+      render: (f) => vQ.data?.find((v) => v.id === f.vehicleId)?.registrationNumber,
+    },
+    {
+      key: "trip",
+      header: "Trip",
+      accessor: (f) => tQ.data?.find((t) => t.id === f.tripId)?.tripNumber ?? "",
+      sortable: true,
+      render: (f) => tQ.data?.find((t) => t.id === f.tripId)?.tripNumber ?? "-",
+    },
+    {
+      key: "litres",
+      header: "Litres",
+      accessor: (f) => f.litres,
+      sortable: true,
+      render: (f) => <span className="tabular">{f.litres} L</span>,
+    },
+    {
+      key: "cost",
+      header: "Cost",
+      accessor: (f) => f.totalCost,
+      sortable: true,
+      render: (f) => <span className="tabular">{formatCurrency(f.totalCost)}</span>,
+    },
+    {
+      key: "price",
+      header: "Price/L",
+      accessor: (f) => (f.litres > 0 ? f.totalCost / f.litres : 0),
+      sortable: true,
+      render: (f) => (
+        <span className="tabular">{formatCurrency(f.litres > 0 ? f.totalCost / f.litres : 0)}</span>
+      ),
+    },
+    {
+      key: "odometer",
+      header: "Odo",
+      accessor: (f) => f.odometerKm,
+      sortable: true,
+      render: (f) => <span className="tabular">{formatNumber(f.odometerKm)}</span>,
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      className: "text-right",
+      render: (f) => (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setFuelEditId(f.id);
+              setFuel({
+                vehicleId: f.vehicleId,
+                tripId: f.tripId ?? "",
+                date: f.date.slice(0, 10),
+                litres: f.litres,
+                totalCost: f.totalCost,
+                odometerKm: f.odometerKm,
+                fuelStation: f.fuelStation ?? "",
+              });
+            }}
+            className="mr-2 rounded-md border px-2 py-1 text-xs hover:bg-muted"
+          >
+            Edit
+          </button>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm("Delete this fuel log?")) deleteFuel.mutate(f.id);
+              }}
+              disabled={deleteFuel.isPending}
+              className="rounded-md border px-2 py-1 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50"
+            >
+              Delete
+            </button>
+          )}
+        </>
+      ),
+    },
+  ];
+
+  const expenseColumns: DataTableColumn<Expense>[] = [
+    {
+      key: "number",
+      header: "#",
+      accessor: (r) => r.expenseNumber,
+      sortable: true,
+      render: (r) => r.expenseNumber,
+    },
+    {
+      key: "date",
+      header: "Date",
+      accessor: (r) => r.expenseDate,
+      sortable: true,
+      render: (r) => <span className="text-xs">{formatDate(r.expenseDate)}</span>,
+    },
+    {
+      key: "vehicle",
+      header: "Vehicle",
+      accessor: (r) => vQ.data?.find((v) => v.id === r.vehicleId)?.registrationNumber ?? "",
+      sortable: true,
+      render: (r) => vQ.data?.find((v) => v.id === r.vehicleId)?.registrationNumber,
+    },
+    {
+      key: "category",
+      header: "Category",
+      accessor: (r) => EXPENSE_CATEGORY_LABELS[r.category],
+      sortable: true,
+      render: (r) => EXPENSE_CATEGORY_LABELS[r.category],
+    },
+    {
+      key: "description",
+      header: "Description",
+      accessor: (r) => r.description,
+      sortable: true,
+      render: (r) => r.description,
+    },
+    {
+      key: "amount",
+      header: "Amount",
+      accessor: (r) => r.amount,
+      sortable: true,
+      render: (r) => <span className="tabular">{formatCurrency(r.amount)}</span>,
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      className: "text-right",
+      render: (r) => (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setExpenseEditId(r.id);
+              setExpense({
+                vehicleId: r.vehicleId,
+                tripId: r.tripId ?? "",
+                category: r.category,
+                description: r.description,
+                amount: r.amount,
+                expenseDate: r.expenseDate.slice(0, 10),
+              });
+            }}
+            className="mr-2 rounded-md border px-2 py-1 text-xs hover:bg-muted"
+          >
+            Edit
+          </button>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm(`Delete ${r.expenseNumber}?`)) deleteExpense.mutate(r.id);
+              }}
+              disabled={deleteExpense.isPending}
+              className="rounded-md border px-2 py-1 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50"
+            >
+              Delete
+            </button>
+          )}
+        </>
+      ),
+    },
+  ];
+
   function exportCsv(kind: "fuel" | "expenses") {
     const rows =
       kind === "fuel"
-        ? (fQ.data ?? []).map((r) => ({
+        ? filteredFuel.map((r) => ({
             date: r.date,
             vehicle: vQ.data?.find((v) => v.id === r.vehicleId)?.registrationNumber,
+            trip: tQ.data?.find((t) => t.id === r.tripId)?.tripNumber,
             litres: r.litres,
             cost: r.totalCost,
             odometer: r.odometerKm,
           }))
-        : (eQ.data ?? []).map((r) => ({
+        : filteredExpenses.map((r) => ({
             date: r.expenseDate,
             number: r.expenseNumber,
             vehicle: vQ.data?.find((v) => v.id === r.vehicleId)?.registrationNumber,
@@ -183,7 +400,7 @@ function FuelExpensePage() {
             <select
               required
               value={fuel.vehicleId}
-              onChange={(e) => setFuel({ ...fuel, vehicleId: e.target.value })}
+              onChange={(e) => setFuel({ ...fuel, vehicleId: e.target.value, tripId: "" })}
               className={inp}
             >
               <option value="">Vehicle…</option>
@@ -286,7 +503,38 @@ function FuelExpensePage() {
                 Export CSV
               </button>
             </div>
-            <table className="min-w-full text-sm">
+            <div className="p-3">
+              <DataTable
+                data={filteredFuel}
+                columns={fuelColumns}
+                loading={fQ.isLoading}
+                error={fQ.error}
+                onRetry={() => fQ.refetch()}
+                rowKey={(f) => f.id}
+                searchable
+                searchPlaceholder="Search fuel logs..."
+                searchAccessor={(f) =>
+                  [
+                    vQ.data?.find((v) => v.id === f.vehicleId)?.registrationNumber,
+                    tQ.data?.find((t) => t.id === f.tripId)?.tripNumber,
+                    f.fuelStation,
+                    f.receiptRef,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")
+                }
+                pageSize={8}
+                toolbar={
+                  <FuelFilters
+                    filters={fuelFilters}
+                    onChange={setFuelFilters}
+                    vehicles={vQ.data ?? []}
+                    trips={tQ.data ?? []}
+                  />
+                }
+              />
+            </div>
+            <table className="hidden min-w-full text-sm">
               <thead className="bg-muted/40 text-left">
                 <tr>
                   <th className="px-3 py-2">Date</th>
@@ -329,13 +577,17 @@ function FuelExpensePage() {
                       >
                         Edit
                       </button>
-                      <button
-                        onClick={() => deleteFuel.mutate(f.id)}
-                        disabled={deleteFuel.isPending}
-                        className="rounded-md border px-2 py-1 text-xs hover:bg-muted disabled:opacity-50"
-                      >
-                        Delete
-                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            if (confirm("Delete this fuel log?")) deleteFuel.mutate(f.id);
+                          }}
+                          disabled={deleteFuel.isPending}
+                          className="rounded-md border px-2 py-1 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                        >
+                          Delete
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -358,7 +610,7 @@ function FuelExpensePage() {
             <select
               required
               value={expense.vehicleId}
-              onChange={(e) => setExpense({ ...expense, vehicleId: e.target.value })}
+              onChange={(e) => setExpense({ ...expense, vehicleId: e.target.value, tripId: "" })}
               className={inp}
             >
               <option value="">Vehicle…</option>
@@ -367,6 +619,20 @@ function FuelExpensePage() {
                   {v.registrationNumber}
                 </option>
               ))}
+            </select>
+            <select
+              value={expense.tripId}
+              onChange={(e) => setExpense({ ...expense, tripId: e.target.value })}
+              className={inp}
+            >
+              <option value="">Trip (optional)</option>
+              {(tQ.data ?? [])
+                .filter((t) => !expense.vehicleId || t.vehicleId === expense.vehicleId)
+                .map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.tripNumber}
+                  </option>
+                ))}
             </select>
             <select
               value={expense.category}
@@ -439,7 +705,37 @@ function FuelExpensePage() {
                 Export CSV
               </button>
             </div>
-            <table className="min-w-full text-sm">
+            <div className="p-3">
+              <DataTable
+                data={filteredExpenses}
+                columns={expenseColumns}
+                loading={eQ.isLoading}
+                error={eQ.error}
+                onRetry={() => eQ.refetch()}
+                rowKey={(e) => e.id}
+                searchable
+                searchPlaceholder="Search expenses..."
+                searchAccessor={(e) =>
+                  [
+                    e.expenseNumber,
+                    e.description,
+                    EXPENSE_CATEGORY_LABELS[e.category],
+                    vQ.data?.find((v) => v.id === e.vehicleId)?.registrationNumber,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")
+                }
+                pageSize={8}
+                toolbar={
+                  <ExpenseFilters
+                    filters={expenseFilters}
+                    onChange={setExpenseFilters}
+                    vehicles={vQ.data ?? []}
+                  />
+                }
+              />
+            </div>
+            <table className="hidden min-w-full text-sm">
               <thead className="bg-muted/40 text-left">
                 <tr>
                   <th className="px-3 py-2">#</th>
@@ -479,13 +775,17 @@ function FuelExpensePage() {
                       >
                         Edit
                       </button>
-                      <button
-                        onClick={() => deleteExpense.mutate(r.id)}
-                        disabled={deleteExpense.isPending}
-                        className="rounded-md border px-2 py-1 text-xs hover:bg-muted disabled:opacity-50"
-                      >
-                        Delete
-                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            if (confirm(`Delete ${r.expenseNumber}?`)) deleteExpense.mutate(r.id);
+                          }}
+                          disabled={deleteExpense.isPending}
+                          className="rounded-md border px-2 py-1 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                        >
+                          Delete
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -526,5 +826,150 @@ function Card({ label, value, hint }: { label: string; value: React.ReactNode; h
       <div className="mt-2 text-2xl font-semibold tabular">{value}</div>
       {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}
     </div>
+  );
+}
+
+type FuelFilterState = {
+  vehicleId: string;
+  tripId: string;
+  from: string;
+  to: string;
+};
+
+function FuelFilters({
+  filters,
+  onChange,
+  vehicles,
+  trips,
+}: {
+  filters: FuelFilterState;
+  onChange: (filters: FuelFilterState) => void;
+  vehicles: Vehicle[];
+  trips: Trip[];
+}) {
+  const inputClass = "h-9 rounded-md border bg-background px-2 text-xs";
+  const vehicleTrips = trips.filter(
+    (trip) => filters.vehicleId === "all" || trip.vehicleId === filters.vehicleId,
+  );
+  return (
+    <>
+      <select
+        value={filters.vehicleId}
+        onChange={(e) => onChange({ ...filters, vehicleId: e.target.value, tripId: "all" })}
+        className={inputClass}
+        aria-label="Filter fuel by vehicle"
+      >
+        <option value="all">All vehicles</option>
+        {vehicles.map((vehicle) => (
+          <option key={vehicle.id} value={vehicle.id}>
+            {vehicle.registrationNumber}
+          </option>
+        ))}
+      </select>
+      <select
+        value={filters.tripId}
+        onChange={(e) => onChange({ ...filters, tripId: e.target.value })}
+        className={inputClass}
+        aria-label="Filter fuel by trip"
+      >
+        <option value="all">All trips</option>
+        {vehicleTrips.map((trip) => (
+          <option key={trip.id} value={trip.id}>
+            {trip.tripNumber}
+          </option>
+        ))}
+      </select>
+      <input
+        type="date"
+        value={filters.from}
+        onChange={(e) => onChange({ ...filters, from: e.target.value })}
+        className={inputClass}
+        aria-label="Fuel from date"
+      />
+      <input
+        type="date"
+        value={filters.to}
+        onChange={(e) => onChange({ ...filters, to: e.target.value })}
+        className={inputClass}
+        aria-label="Fuel to date"
+      />
+      <button
+        type="button"
+        onClick={() => onChange({ vehicleId: "all", tripId: "all", from: "", to: "" })}
+        className="h-9 rounded-md border px-2 text-xs hover:bg-muted"
+      >
+        Reset
+      </button>
+    </>
+  );
+}
+
+type ExpenseFilterState = {
+  vehicleId: string;
+  category: string;
+  from: string;
+  to: string;
+};
+
+function ExpenseFilters({
+  filters,
+  onChange,
+  vehicles,
+}: {
+  filters: ExpenseFilterState;
+  onChange: (filters: ExpenseFilterState) => void;
+  vehicles: Vehicle[];
+}) {
+  const inputClass = "h-9 rounded-md border bg-background px-2 text-xs";
+  return (
+    <>
+      <select
+        value={filters.vehicleId}
+        onChange={(e) => onChange({ ...filters, vehicleId: e.target.value })}
+        className={inputClass}
+        aria-label="Filter expenses by vehicle"
+      >
+        <option value="all">All vehicles</option>
+        {vehicles.map((vehicle) => (
+          <option key={vehicle.id} value={vehicle.id}>
+            {vehicle.registrationNumber}
+          </option>
+        ))}
+      </select>
+      <select
+        value={filters.category}
+        onChange={(e) => onChange({ ...filters, category: e.target.value })}
+        className={inputClass}
+        aria-label="Filter expenses by category"
+      >
+        <option value="all">All categories</option>
+        {EXPENSE_CATEGORIES.map((category) => (
+          <option key={category} value={category}>
+            {EXPENSE_CATEGORY_LABELS[category]}
+          </option>
+        ))}
+      </select>
+      <input
+        type="date"
+        value={filters.from}
+        onChange={(e) => onChange({ ...filters, from: e.target.value })}
+        className={inputClass}
+        aria-label="Expense from date"
+      />
+      <input
+        type="date"
+        value={filters.to}
+        onChange={(e) => onChange({ ...filters, to: e.target.value })}
+        className={inputClass}
+        aria-label="Expense to date"
+      />
+      <button
+        type="button"
+        onClick={() => onChange({ vehicleId: "all", category: "all", from: "", to: "" })}
+        className="h-9 rounded-md border px-2 text-xs hover:bg-muted"
+      >
+        Reset
+      </button>
+    </>
   );
 }

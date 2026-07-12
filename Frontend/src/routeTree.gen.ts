@@ -15,16 +15,18 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AccessDeniedRouteImport } from './routes/access-denied'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedTripsRouteImport } from './routes/_authenticated/trips'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
-import { Route as AuthenticatedMaintenanceRouteImport } from './routes/_authenticated/maintenance'
 import { Route as AuthenticatedLiveOperationsRouteImport } from './routes/_authenticated/live-operations'
 import { Route as AuthenticatedFuelExpensesRouteImport } from './routes/_authenticated/fuel-expenses'
-import { Route as AuthenticatedFleetRouteImport } from './routes/_authenticated/fleet'
-import { Route as AuthenticatedDriversRouteImport } from './routes/_authenticated/drivers'
+import { Route as AuthenticatedFleetHealthRouteImport } from './routes/_authenticated/fleet-health'
+import { Route as AuthenticatedDispatchIntelligenceRouteImport } from './routes/_authenticated/dispatch-intelligence'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
+import { Route as AuthenticatedTripsIndexRouteImport } from './routes/_authenticated/trips.index'
+import { Route as AuthenticatedMaintenanceIndexRouteImport } from './routes/_authenticated/maintenance.index'
+import { Route as AuthenticatedFleetIndexRouteImport } from './routes/_authenticated/fleet.index'
+import { Route as AuthenticatedDriversIndexRouteImport } from './routes/_authenticated/drivers.index'
 import { Route as AuthenticatedTripsNewRouteImport } from './routes/_authenticated/trips.new'
 import { Route as AuthenticatedTripsTripIdRouteImport } from './routes/_authenticated/trips.$tripId'
 import { Route as AuthenticatedMaintenanceNewRouteImport } from './routes/_authenticated/maintenance.new'
@@ -33,6 +35,8 @@ import { Route as AuthenticatedFleetNewRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedFleetVehicleIdRouteImport } from './routes/_authenticated/fleet.$vehicleId'
 import { Route as AuthenticatedDriversNewRouteImport } from './routes/_authenticated/drivers.new'
 import { Route as AuthenticatedDriversDriverIdRouteImport } from './routes/_authenticated/drivers.$driverId'
+import { Route as AuthenticatedTripsTripIdEditRouteImport } from './routes/_authenticated/trips.$tripId.edit'
+import { Route as AuthenticatedMaintenanceMaintenanceIdEditRouteImport } from './routes/_authenticated/maintenance.$maintenanceId.edit'
 import { Route as AuthenticatedFleetVehicleIdEditRouteImport } from './routes/_authenticated/fleet.$vehicleId.edit'
 import { Route as AuthenticatedDriversDriverIdEditRouteImport } from './routes/_authenticated/drivers.$driverId.edit'
 
@@ -65,11 +69,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedTripsRoute = AuthenticatedTripsRouteImport.update({
-  id: '/trips',
-  path: '/trips',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -79,12 +78,6 @@ const AuthenticatedNotificationsRoute =
   AuthenticatedNotificationsRouteImport.update({
     id: '/notifications',
     path: '/notifications',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedMaintenanceRoute =
-  AuthenticatedMaintenanceRouteImport.update({
-    id: '/maintenance',
-    path: '/maintenance',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedLiveOperationsRoute =
@@ -99,16 +92,18 @@ const AuthenticatedFuelExpensesRoute =
     path: '/fuel-expenses',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedFleetRoute = AuthenticatedFleetRouteImport.update({
-  id: '/fleet',
-  path: '/fleet',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedDriversRoute = AuthenticatedDriversRouteImport.update({
-  id: '/drivers',
-  path: '/drivers',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
+const AuthenticatedFleetHealthRoute =
+  AuthenticatedFleetHealthRouteImport.update({
+    id: '/fleet-health',
+    path: '/fleet-health',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedDispatchIntelligenceRoute =
+  AuthenticatedDispatchIntelligenceRouteImport.update({
+    id: '/dispatch-intelligence',
+    path: '/dispatch-intelligence',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -119,50 +114,84 @@ const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedTripsIndexRoute = AuthenticatedTripsIndexRouteImport.update({
+  id: '/trips/',
+  path: '/trips/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedMaintenanceIndexRoute =
+  AuthenticatedMaintenanceIndexRouteImport.update({
+    id: '/maintenance/',
+    path: '/maintenance/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedFleetIndexRoute = AuthenticatedFleetIndexRouteImport.update({
+  id: '/fleet/',
+  path: '/fleet/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedDriversIndexRoute =
+  AuthenticatedDriversIndexRouteImport.update({
+    id: '/drivers/',
+    path: '/drivers/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedTripsNewRoute = AuthenticatedTripsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AuthenticatedTripsRoute,
+  id: '/trips/new',
+  path: '/trips/new',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedTripsTripIdRoute =
   AuthenticatedTripsTripIdRouteImport.update({
-    id: '/$tripId',
-    path: '/$tripId',
-    getParentRoute: () => AuthenticatedTripsRoute,
+    id: '/trips/$tripId',
+    path: '/trips/$tripId',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedMaintenanceNewRoute =
   AuthenticatedMaintenanceNewRouteImport.update({
-    id: '/new',
-    path: '/new',
-    getParentRoute: () => AuthenticatedMaintenanceRoute,
+    id: '/maintenance/new',
+    path: '/maintenance/new',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedMaintenanceMaintenanceIdRoute =
   AuthenticatedMaintenanceMaintenanceIdRouteImport.update({
-    id: '/$maintenanceId',
-    path: '/$maintenanceId',
-    getParentRoute: () => AuthenticatedMaintenanceRoute,
+    id: '/maintenance/$maintenanceId',
+    path: '/maintenance/$maintenanceId',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedFleetNewRoute = AuthenticatedFleetNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AuthenticatedFleetRoute,
+  id: '/fleet/new',
+  path: '/fleet/new',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedFleetVehicleIdRoute =
   AuthenticatedFleetVehicleIdRouteImport.update({
-    id: '/$vehicleId',
-    path: '/$vehicleId',
-    getParentRoute: () => AuthenticatedFleetRoute,
+    id: '/fleet/$vehicleId',
+    path: '/fleet/$vehicleId',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedDriversNewRoute = AuthenticatedDriversNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AuthenticatedDriversRoute,
+  id: '/drivers/new',
+  path: '/drivers/new',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedDriversDriverIdRoute =
   AuthenticatedDriversDriverIdRouteImport.update({
-    id: '/$driverId',
-    path: '/$driverId',
-    getParentRoute: () => AuthenticatedDriversRoute,
+    id: '/drivers/$driverId',
+    path: '/drivers/$driverId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedTripsTripIdEditRoute =
+  AuthenticatedTripsTripIdEditRouteImport.update({
+    id: '/edit',
+    path: '/edit',
+    getParentRoute: () => AuthenticatedTripsTripIdRoute,
+  } as any)
+const AuthenticatedMaintenanceMaintenanceIdEditRoute =
+  AuthenticatedMaintenanceMaintenanceIdEditRouteImport.update({
+    id: '/edit',
+    path: '/edit',
+    getParentRoute: () => AuthenticatedMaintenanceMaintenanceIdRoute,
   } as any)
 const AuthenticatedFleetVehicleIdEditRoute =
   AuthenticatedFleetVehicleIdEditRouteImport.update({
@@ -185,24 +214,28 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/drivers': typeof AuthenticatedDriversRouteWithChildren
-  '/fleet': typeof AuthenticatedFleetRouteWithChildren
+  '/dispatch-intelligence': typeof AuthenticatedDispatchIntelligenceRoute
+  '/fleet-health': typeof AuthenticatedFleetHealthRoute
   '/fuel-expenses': typeof AuthenticatedFuelExpensesRoute
   '/live-operations': typeof AuthenticatedLiveOperationsRoute
-  '/maintenance': typeof AuthenticatedMaintenanceRouteWithChildren
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/trips': typeof AuthenticatedTripsRouteWithChildren
   '/drivers/$driverId': typeof AuthenticatedDriversDriverIdRouteWithChildren
   '/drivers/new': typeof AuthenticatedDriversNewRoute
   '/fleet/$vehicleId': typeof AuthenticatedFleetVehicleIdRouteWithChildren
   '/fleet/new': typeof AuthenticatedFleetNewRoute
-  '/maintenance/$maintenanceId': typeof AuthenticatedMaintenanceMaintenanceIdRoute
+  '/maintenance/$maintenanceId': typeof AuthenticatedMaintenanceMaintenanceIdRouteWithChildren
   '/maintenance/new': typeof AuthenticatedMaintenanceNewRoute
-  '/trips/$tripId': typeof AuthenticatedTripsTripIdRoute
+  '/trips/$tripId': typeof AuthenticatedTripsTripIdRouteWithChildren
   '/trips/new': typeof AuthenticatedTripsNewRoute
+  '/drivers/': typeof AuthenticatedDriversIndexRoute
+  '/fleet/': typeof AuthenticatedFleetIndexRoute
+  '/maintenance/': typeof AuthenticatedMaintenanceIndexRoute
+  '/trips/': typeof AuthenticatedTripsIndexRoute
   '/drivers/$driverId/edit': typeof AuthenticatedDriversDriverIdEditRoute
   '/fleet/$vehicleId/edit': typeof AuthenticatedFleetVehicleIdEditRoute
+  '/maintenance/$maintenanceId/edit': typeof AuthenticatedMaintenanceMaintenanceIdEditRoute
+  '/trips/$tripId/edit': typeof AuthenticatedTripsTripIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -212,24 +245,28 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/drivers': typeof AuthenticatedDriversRouteWithChildren
-  '/fleet': typeof AuthenticatedFleetRouteWithChildren
+  '/dispatch-intelligence': typeof AuthenticatedDispatchIntelligenceRoute
+  '/fleet-health': typeof AuthenticatedFleetHealthRoute
   '/fuel-expenses': typeof AuthenticatedFuelExpensesRoute
   '/live-operations': typeof AuthenticatedLiveOperationsRoute
-  '/maintenance': typeof AuthenticatedMaintenanceRouteWithChildren
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/trips': typeof AuthenticatedTripsRouteWithChildren
   '/drivers/$driverId': typeof AuthenticatedDriversDriverIdRouteWithChildren
   '/drivers/new': typeof AuthenticatedDriversNewRoute
   '/fleet/$vehicleId': typeof AuthenticatedFleetVehicleIdRouteWithChildren
   '/fleet/new': typeof AuthenticatedFleetNewRoute
-  '/maintenance/$maintenanceId': typeof AuthenticatedMaintenanceMaintenanceIdRoute
+  '/maintenance/$maintenanceId': typeof AuthenticatedMaintenanceMaintenanceIdRouteWithChildren
   '/maintenance/new': typeof AuthenticatedMaintenanceNewRoute
-  '/trips/$tripId': typeof AuthenticatedTripsTripIdRoute
+  '/trips/$tripId': typeof AuthenticatedTripsTripIdRouteWithChildren
   '/trips/new': typeof AuthenticatedTripsNewRoute
+  '/drivers': typeof AuthenticatedDriversIndexRoute
+  '/fleet': typeof AuthenticatedFleetIndexRoute
+  '/maintenance': typeof AuthenticatedMaintenanceIndexRoute
+  '/trips': typeof AuthenticatedTripsIndexRoute
   '/drivers/$driverId/edit': typeof AuthenticatedDriversDriverIdEditRoute
   '/fleet/$vehicleId/edit': typeof AuthenticatedFleetVehicleIdEditRoute
+  '/maintenance/$maintenanceId/edit': typeof AuthenticatedMaintenanceMaintenanceIdEditRoute
+  '/trips/$tripId/edit': typeof AuthenticatedTripsTripIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -241,24 +278,28 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/drivers': typeof AuthenticatedDriversRouteWithChildren
-  '/_authenticated/fleet': typeof AuthenticatedFleetRouteWithChildren
+  '/_authenticated/dispatch-intelligence': typeof AuthenticatedDispatchIntelligenceRoute
+  '/_authenticated/fleet-health': typeof AuthenticatedFleetHealthRoute
   '/_authenticated/fuel-expenses': typeof AuthenticatedFuelExpensesRoute
   '/_authenticated/live-operations': typeof AuthenticatedLiveOperationsRoute
-  '/_authenticated/maintenance': typeof AuthenticatedMaintenanceRouteWithChildren
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
-  '/_authenticated/trips': typeof AuthenticatedTripsRouteWithChildren
   '/_authenticated/drivers/$driverId': typeof AuthenticatedDriversDriverIdRouteWithChildren
   '/_authenticated/drivers/new': typeof AuthenticatedDriversNewRoute
   '/_authenticated/fleet/$vehicleId': typeof AuthenticatedFleetVehicleIdRouteWithChildren
   '/_authenticated/fleet/new': typeof AuthenticatedFleetNewRoute
-  '/_authenticated/maintenance/$maintenanceId': typeof AuthenticatedMaintenanceMaintenanceIdRoute
+  '/_authenticated/maintenance/$maintenanceId': typeof AuthenticatedMaintenanceMaintenanceIdRouteWithChildren
   '/_authenticated/maintenance/new': typeof AuthenticatedMaintenanceNewRoute
-  '/_authenticated/trips/$tripId': typeof AuthenticatedTripsTripIdRoute
+  '/_authenticated/trips/$tripId': typeof AuthenticatedTripsTripIdRouteWithChildren
   '/_authenticated/trips/new': typeof AuthenticatedTripsNewRoute
+  '/_authenticated/drivers/': typeof AuthenticatedDriversIndexRoute
+  '/_authenticated/fleet/': typeof AuthenticatedFleetIndexRoute
+  '/_authenticated/maintenance/': typeof AuthenticatedMaintenanceIndexRoute
+  '/_authenticated/trips/': typeof AuthenticatedTripsIndexRoute
   '/_authenticated/drivers/$driverId/edit': typeof AuthenticatedDriversDriverIdEditRoute
   '/_authenticated/fleet/$vehicleId/edit': typeof AuthenticatedFleetVehicleIdEditRoute
+  '/_authenticated/maintenance/$maintenanceId/edit': typeof AuthenticatedMaintenanceMaintenanceIdEditRoute
+  '/_authenticated/trips/$tripId/edit': typeof AuthenticatedTripsTripIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -270,14 +311,12 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/analytics'
     | '/dashboard'
-    | '/drivers'
-    | '/fleet'
+    | '/dispatch-intelligence'
+    | '/fleet-health'
     | '/fuel-expenses'
     | '/live-operations'
-    | '/maintenance'
     | '/notifications'
     | '/settings'
-    | '/trips'
     | '/drivers/$driverId'
     | '/drivers/new'
     | '/fleet/$vehicleId'
@@ -286,8 +325,14 @@ export interface FileRouteTypes {
     | '/maintenance/new'
     | '/trips/$tripId'
     | '/trips/new'
+    | '/drivers/'
+    | '/fleet/'
+    | '/maintenance/'
+    | '/trips/'
     | '/drivers/$driverId/edit'
     | '/fleet/$vehicleId/edit'
+    | '/maintenance/$maintenanceId/edit'
+    | '/trips/$tripId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -297,14 +342,12 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/analytics'
     | '/dashboard'
-    | '/drivers'
-    | '/fleet'
+    | '/dispatch-intelligence'
+    | '/fleet-health'
     | '/fuel-expenses'
     | '/live-operations'
-    | '/maintenance'
     | '/notifications'
     | '/settings'
-    | '/trips'
     | '/drivers/$driverId'
     | '/drivers/new'
     | '/fleet/$vehicleId'
@@ -313,8 +356,14 @@ export interface FileRouteTypes {
     | '/maintenance/new'
     | '/trips/$tripId'
     | '/trips/new'
+    | '/drivers'
+    | '/fleet'
+    | '/maintenance'
+    | '/trips'
     | '/drivers/$driverId/edit'
     | '/fleet/$vehicleId/edit'
+    | '/maintenance/$maintenanceId/edit'
+    | '/trips/$tripId/edit'
   id:
     | '__root__'
     | '/'
@@ -325,14 +374,12 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_authenticated/analytics'
     | '/_authenticated/dashboard'
-    | '/_authenticated/drivers'
-    | '/_authenticated/fleet'
+    | '/_authenticated/dispatch-intelligence'
+    | '/_authenticated/fleet-health'
     | '/_authenticated/fuel-expenses'
     | '/_authenticated/live-operations'
-    | '/_authenticated/maintenance'
     | '/_authenticated/notifications'
     | '/_authenticated/settings'
-    | '/_authenticated/trips'
     | '/_authenticated/drivers/$driverId'
     | '/_authenticated/drivers/new'
     | '/_authenticated/fleet/$vehicleId'
@@ -341,8 +388,14 @@ export interface FileRouteTypes {
     | '/_authenticated/maintenance/new'
     | '/_authenticated/trips/$tripId'
     | '/_authenticated/trips/new'
+    | '/_authenticated/drivers/'
+    | '/_authenticated/fleet/'
+    | '/_authenticated/maintenance/'
+    | '/_authenticated/trips/'
     | '/_authenticated/drivers/$driverId/edit'
     | '/_authenticated/fleet/$vehicleId/edit'
+    | '/_authenticated/maintenance/$maintenanceId/edit'
+    | '/_authenticated/trips/$tripId/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -398,13 +451,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/trips': {
-      id: '/_authenticated/trips'
-      path: '/trips'
-      fullPath: '/trips'
-      preLoaderRoute: typeof AuthenticatedTripsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
@@ -417,13 +463,6 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/notifications'
       preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/maintenance': {
-      id: '/_authenticated/maintenance'
-      path: '/maintenance'
-      fullPath: '/maintenance'
-      preLoaderRoute: typeof AuthenticatedMaintenanceRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/live-operations': {
@@ -440,18 +479,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFuelExpensesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/fleet': {
-      id: '/_authenticated/fleet'
-      path: '/fleet'
-      fullPath: '/fleet'
-      preLoaderRoute: typeof AuthenticatedFleetRouteImport
+    '/_authenticated/fleet-health': {
+      id: '/_authenticated/fleet-health'
+      path: '/fleet-health'
+      fullPath: '/fleet-health'
+      preLoaderRoute: typeof AuthenticatedFleetHealthRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/drivers': {
-      id: '/_authenticated/drivers'
-      path: '/drivers'
-      fullPath: '/drivers'
-      preLoaderRoute: typeof AuthenticatedDriversRouteImport
+    '/_authenticated/dispatch-intelligence': {
+      id: '/_authenticated/dispatch-intelligence'
+      path: '/dispatch-intelligence'
+      fullPath: '/dispatch-intelligence'
+      preLoaderRoute: typeof AuthenticatedDispatchIntelligenceRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
@@ -468,61 +507,103 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/trips/': {
+      id: '/_authenticated/trips/'
+      path: '/trips'
+      fullPath: '/trips/'
+      preLoaderRoute: typeof AuthenticatedTripsIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/maintenance/': {
+      id: '/_authenticated/maintenance/'
+      path: '/maintenance'
+      fullPath: '/maintenance/'
+      preLoaderRoute: typeof AuthenticatedMaintenanceIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/fleet/': {
+      id: '/_authenticated/fleet/'
+      path: '/fleet'
+      fullPath: '/fleet/'
+      preLoaderRoute: typeof AuthenticatedFleetIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/drivers/': {
+      id: '/_authenticated/drivers/'
+      path: '/drivers'
+      fullPath: '/drivers/'
+      preLoaderRoute: typeof AuthenticatedDriversIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/trips/new': {
       id: '/_authenticated/trips/new'
-      path: '/new'
+      path: '/trips/new'
       fullPath: '/trips/new'
       preLoaderRoute: typeof AuthenticatedTripsNewRouteImport
-      parentRoute: typeof AuthenticatedTripsRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/trips/$tripId': {
       id: '/_authenticated/trips/$tripId'
-      path: '/$tripId'
+      path: '/trips/$tripId'
       fullPath: '/trips/$tripId'
       preLoaderRoute: typeof AuthenticatedTripsTripIdRouteImport
-      parentRoute: typeof AuthenticatedTripsRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/maintenance/new': {
       id: '/_authenticated/maintenance/new'
-      path: '/new'
+      path: '/maintenance/new'
       fullPath: '/maintenance/new'
       preLoaderRoute: typeof AuthenticatedMaintenanceNewRouteImport
-      parentRoute: typeof AuthenticatedMaintenanceRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/maintenance/$maintenanceId': {
       id: '/_authenticated/maintenance/$maintenanceId'
-      path: '/$maintenanceId'
+      path: '/maintenance/$maintenanceId'
       fullPath: '/maintenance/$maintenanceId'
       preLoaderRoute: typeof AuthenticatedMaintenanceMaintenanceIdRouteImport
-      parentRoute: typeof AuthenticatedMaintenanceRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/fleet/new': {
       id: '/_authenticated/fleet/new'
-      path: '/new'
+      path: '/fleet/new'
       fullPath: '/fleet/new'
       preLoaderRoute: typeof AuthenticatedFleetNewRouteImport
-      parentRoute: typeof AuthenticatedFleetRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/fleet/$vehicleId': {
       id: '/_authenticated/fleet/$vehicleId'
-      path: '/$vehicleId'
+      path: '/fleet/$vehicleId'
       fullPath: '/fleet/$vehicleId'
       preLoaderRoute: typeof AuthenticatedFleetVehicleIdRouteImport
-      parentRoute: typeof AuthenticatedFleetRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/drivers/new': {
       id: '/_authenticated/drivers/new'
-      path: '/new'
+      path: '/drivers/new'
       fullPath: '/drivers/new'
       preLoaderRoute: typeof AuthenticatedDriversNewRouteImport
-      parentRoute: typeof AuthenticatedDriversRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/drivers/$driverId': {
       id: '/_authenticated/drivers/$driverId'
-      path: '/$driverId'
+      path: '/drivers/$driverId'
       fullPath: '/drivers/$driverId'
       preLoaderRoute: typeof AuthenticatedDriversDriverIdRouteImport
-      parentRoute: typeof AuthenticatedDriversRoute
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/trips/$tripId/edit': {
+      id: '/_authenticated/trips/$tripId/edit'
+      path: '/edit'
+      fullPath: '/trips/$tripId/edit'
+      preLoaderRoute: typeof AuthenticatedTripsTripIdEditRouteImport
+      parentRoute: typeof AuthenticatedTripsTripIdRoute
+    }
+    '/_authenticated/maintenance/$maintenanceId/edit': {
+      id: '/_authenticated/maintenance/$maintenanceId/edit'
+      path: '/edit'
+      fullPath: '/maintenance/$maintenanceId/edit'
+      preLoaderRoute: typeof AuthenticatedMaintenanceMaintenanceIdEditRouteImport
+      parentRoute: typeof AuthenticatedMaintenanceMaintenanceIdRoute
     }
     '/_authenticated/fleet/$vehicleId/edit': {
       id: '/_authenticated/fleet/$vehicleId/edit'
@@ -556,20 +637,6 @@ const AuthenticatedDriversDriverIdRouteWithChildren =
     AuthenticatedDriversDriverIdRouteChildren,
   )
 
-interface AuthenticatedDriversRouteChildren {
-  AuthenticatedDriversDriverIdRoute: typeof AuthenticatedDriversDriverIdRouteWithChildren
-  AuthenticatedDriversNewRoute: typeof AuthenticatedDriversNewRoute
-}
-
-const AuthenticatedDriversRouteChildren: AuthenticatedDriversRouteChildren = {
-  AuthenticatedDriversDriverIdRoute:
-    AuthenticatedDriversDriverIdRouteWithChildren,
-  AuthenticatedDriversNewRoute: AuthenticatedDriversNewRoute,
-}
-
-const AuthenticatedDriversRouteWithChildren =
-  AuthenticatedDriversRoute._addFileChildren(AuthenticatedDriversRouteChildren)
-
 interface AuthenticatedFleetVehicleIdRouteChildren {
   AuthenticatedFleetVehicleIdEditRoute: typeof AuthenticatedFleetVehicleIdEditRoute
 }
@@ -584,74 +651,83 @@ const AuthenticatedFleetVehicleIdRouteWithChildren =
     AuthenticatedFleetVehicleIdRouteChildren,
   )
 
-interface AuthenticatedFleetRouteChildren {
-  AuthenticatedFleetVehicleIdRoute: typeof AuthenticatedFleetVehicleIdRouteWithChildren
-  AuthenticatedFleetNewRoute: typeof AuthenticatedFleetNewRoute
+interface AuthenticatedMaintenanceMaintenanceIdRouteChildren {
+  AuthenticatedMaintenanceMaintenanceIdEditRoute: typeof AuthenticatedMaintenanceMaintenanceIdEditRoute
 }
 
-const AuthenticatedFleetRouteChildren: AuthenticatedFleetRouteChildren = {
-  AuthenticatedFleetVehicleIdRoute:
-    AuthenticatedFleetVehicleIdRouteWithChildren,
-  AuthenticatedFleetNewRoute: AuthenticatedFleetNewRoute,
-}
-
-const AuthenticatedFleetRouteWithChildren =
-  AuthenticatedFleetRoute._addFileChildren(AuthenticatedFleetRouteChildren)
-
-interface AuthenticatedMaintenanceRouteChildren {
-  AuthenticatedMaintenanceMaintenanceIdRoute: typeof AuthenticatedMaintenanceMaintenanceIdRoute
-  AuthenticatedMaintenanceNewRoute: typeof AuthenticatedMaintenanceNewRoute
-}
-
-const AuthenticatedMaintenanceRouteChildren: AuthenticatedMaintenanceRouteChildren =
+const AuthenticatedMaintenanceMaintenanceIdRouteChildren: AuthenticatedMaintenanceMaintenanceIdRouteChildren =
   {
-    AuthenticatedMaintenanceMaintenanceIdRoute:
-      AuthenticatedMaintenanceMaintenanceIdRoute,
-    AuthenticatedMaintenanceNewRoute: AuthenticatedMaintenanceNewRoute,
+    AuthenticatedMaintenanceMaintenanceIdEditRoute:
+      AuthenticatedMaintenanceMaintenanceIdEditRoute,
   }
 
-const AuthenticatedMaintenanceRouteWithChildren =
-  AuthenticatedMaintenanceRoute._addFileChildren(
-    AuthenticatedMaintenanceRouteChildren,
+const AuthenticatedMaintenanceMaintenanceIdRouteWithChildren =
+  AuthenticatedMaintenanceMaintenanceIdRoute._addFileChildren(
+    AuthenticatedMaintenanceMaintenanceIdRouteChildren,
   )
 
-interface AuthenticatedTripsRouteChildren {
-  AuthenticatedTripsTripIdRoute: typeof AuthenticatedTripsTripIdRoute
-  AuthenticatedTripsNewRoute: typeof AuthenticatedTripsNewRoute
+interface AuthenticatedTripsTripIdRouteChildren {
+  AuthenticatedTripsTripIdEditRoute: typeof AuthenticatedTripsTripIdEditRoute
 }
 
-const AuthenticatedTripsRouteChildren: AuthenticatedTripsRouteChildren = {
-  AuthenticatedTripsTripIdRoute: AuthenticatedTripsTripIdRoute,
-  AuthenticatedTripsNewRoute: AuthenticatedTripsNewRoute,
-}
+const AuthenticatedTripsTripIdRouteChildren: AuthenticatedTripsTripIdRouteChildren =
+  {
+    AuthenticatedTripsTripIdEditRoute: AuthenticatedTripsTripIdEditRoute,
+  }
 
-const AuthenticatedTripsRouteWithChildren =
-  AuthenticatedTripsRoute._addFileChildren(AuthenticatedTripsRouteChildren)
+const AuthenticatedTripsTripIdRouteWithChildren =
+  AuthenticatedTripsTripIdRoute._addFileChildren(
+    AuthenticatedTripsTripIdRouteChildren,
+  )
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedDriversRoute: typeof AuthenticatedDriversRouteWithChildren
-  AuthenticatedFleetRoute: typeof AuthenticatedFleetRouteWithChildren
+  AuthenticatedDispatchIntelligenceRoute: typeof AuthenticatedDispatchIntelligenceRoute
+  AuthenticatedFleetHealthRoute: typeof AuthenticatedFleetHealthRoute
   AuthenticatedFuelExpensesRoute: typeof AuthenticatedFuelExpensesRoute
   AuthenticatedLiveOperationsRoute: typeof AuthenticatedLiveOperationsRoute
-  AuthenticatedMaintenanceRoute: typeof AuthenticatedMaintenanceRouteWithChildren
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
-  AuthenticatedTripsRoute: typeof AuthenticatedTripsRouteWithChildren
+  AuthenticatedDriversDriverIdRoute: typeof AuthenticatedDriversDriverIdRouteWithChildren
+  AuthenticatedDriversNewRoute: typeof AuthenticatedDriversNewRoute
+  AuthenticatedFleetVehicleIdRoute: typeof AuthenticatedFleetVehicleIdRouteWithChildren
+  AuthenticatedFleetNewRoute: typeof AuthenticatedFleetNewRoute
+  AuthenticatedMaintenanceMaintenanceIdRoute: typeof AuthenticatedMaintenanceMaintenanceIdRouteWithChildren
+  AuthenticatedMaintenanceNewRoute: typeof AuthenticatedMaintenanceNewRoute
+  AuthenticatedTripsTripIdRoute: typeof AuthenticatedTripsTripIdRouteWithChildren
+  AuthenticatedTripsNewRoute: typeof AuthenticatedTripsNewRoute
+  AuthenticatedDriversIndexRoute: typeof AuthenticatedDriversIndexRoute
+  AuthenticatedFleetIndexRoute: typeof AuthenticatedFleetIndexRoute
+  AuthenticatedMaintenanceIndexRoute: typeof AuthenticatedMaintenanceIndexRoute
+  AuthenticatedTripsIndexRoute: typeof AuthenticatedTripsIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedDriversRoute: AuthenticatedDriversRouteWithChildren,
-  AuthenticatedFleetRoute: AuthenticatedFleetRouteWithChildren,
+  AuthenticatedDispatchIntelligenceRoute:
+    AuthenticatedDispatchIntelligenceRoute,
+  AuthenticatedFleetHealthRoute: AuthenticatedFleetHealthRoute,
   AuthenticatedFuelExpensesRoute: AuthenticatedFuelExpensesRoute,
   AuthenticatedLiveOperationsRoute: AuthenticatedLiveOperationsRoute,
-  AuthenticatedMaintenanceRoute: AuthenticatedMaintenanceRouteWithChildren,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
-  AuthenticatedTripsRoute: AuthenticatedTripsRouteWithChildren,
+  AuthenticatedDriversDriverIdRoute:
+    AuthenticatedDriversDriverIdRouteWithChildren,
+  AuthenticatedDriversNewRoute: AuthenticatedDriversNewRoute,
+  AuthenticatedFleetVehicleIdRoute:
+    AuthenticatedFleetVehicleIdRouteWithChildren,
+  AuthenticatedFleetNewRoute: AuthenticatedFleetNewRoute,
+  AuthenticatedMaintenanceMaintenanceIdRoute:
+    AuthenticatedMaintenanceMaintenanceIdRouteWithChildren,
+  AuthenticatedMaintenanceNewRoute: AuthenticatedMaintenanceNewRoute,
+  AuthenticatedTripsTripIdRoute: AuthenticatedTripsTripIdRouteWithChildren,
+  AuthenticatedTripsNewRoute: AuthenticatedTripsNewRoute,
+  AuthenticatedDriversIndexRoute: AuthenticatedDriversIndexRoute,
+  AuthenticatedFleetIndexRoute: AuthenticatedFleetIndexRoute,
+  AuthenticatedMaintenanceIndexRoute: AuthenticatedMaintenanceIndexRoute,
+  AuthenticatedTripsIndexRoute: AuthenticatedTripsIndexRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

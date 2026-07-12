@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { maintenanceApi, vehicleApi } from "@/lib/api/services";
 import { PageHeader } from "@/components/common/states";
@@ -17,10 +17,11 @@ export const Route = createFileRoute("/_authenticated/maintenance/new")({
 function NewMaintenancePage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const search = Route.useSearch() as Partial<{ vehicleId: string }>;
   const vQ = useQuery({ queryKey: ["vehicles"], queryFn: vehicleApi.list });
 
   const [v, setV] = useState({
-    vehicleId: "",
+    vehicleId: search.vehicleId ?? "",
     serviceType: "oil_change" as Maintenance["serviceType"],
     description: "",
     priority: "medium" as Maintenance["priority"],
@@ -32,6 +33,12 @@ function NewMaintenancePage() {
     status: "in_progress" as Maintenance["status"],
     notes: "",
   });
+
+  useEffect(() => {
+    if (!search.vehicleId || !vQ.data) return;
+    const veh = vQ.data.find((x) => x.id === search.vehicleId);
+    if (veh) setV((current) => ({ ...current, odometerAtService: veh.odometerKm }));
+  }, [search.vehicleId, vQ.data]);
 
   const mut = useMutation({
     mutationFn: () =>

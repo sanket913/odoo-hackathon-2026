@@ -1,7 +1,7 @@
 import { prisma } from "../src/db.js";
 import { hashPassword } from "../src/auth.js";
 
-const DEV_PASSWORD = "TransitOps@2026";
+const DEV_PASSWORD = "demo1234";
 const now = new Date();
 const daysAgo = (n: number) => new Date(now.getTime() - n * 86400000);
 const daysFromNow = (n: number) => new Date(now.getTime() + n * 86400000);
@@ -40,6 +40,7 @@ async function reset() {
   await prisma.passwordResetToken.deleteMany();
   await prisma.refreshSession.deleteMany();
   await prisma.userRole.deleteMany();
+  await prisma.user.deleteMany();
   await prisma.rolePermission.deleteMany();
   await prisma.permission.deleteMany();
   await prisma.role.deleteMany();
@@ -136,11 +137,11 @@ async function seedAccess() {
 
   const passwordHash = await hashPassword(DEV_PASSWORD);
   const users = [
-    ["Priya Sharma", "admin@transitops.in", "admin"],
-    ["Rahul Verma", "fleet.manager@transitops.in", "fleet_manager"],
-    ["Neha Patel", "dispatcher@transitops.in", "dispatcher"],
-    ["Karan Singh", "safety@transitops.in", "safety_officer"],
-    ["Ananya Iyer", "finance@transitops.in", "financial_analyst"],
+    ["Priya Sharma", "admin@transitops.dev", "admin"],
+    ["Rahul Verma", "fleet@transitops.dev", "fleet_manager"],
+    ["Neha Patel", "dispatch@transitops.dev", "dispatcher"],
+    ["Karan Singh", "safety@transitops.dev", "safety_officer"],
+    ["Ananya Iyer", "finance@transitops.dev", "financial_analyst"],
   ] as const;
 
   for (const [name, email, roleName] of users) {

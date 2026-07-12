@@ -51,8 +51,6 @@ function EditDriverPage() {
     if (!values.fullName.trim()) next.fullName = "Name is required.";
     if (!values.licenceNumber.trim()) next.licenceNumber = "Licence number is required.";
     if (!values.contactNumber.trim()) next.contactNumber = "Contact number is required.";
-    if (values.safetyScore < 0 || values.safetyScore > 100)
-      next.safetyScore = "Score must be 0-100.";
     setErrors(next);
     if (Object.keys(next).length) return;
     try {
@@ -63,7 +61,6 @@ function EditDriverPage() {
         licenceExpiry: new Date(values.licenceExpiry).toISOString(),
         contactNumber: values.contactNumber,
         email: values.email || undefined,
-        safetyScore: values.safetyScore,
         status: values.status,
         region: values.region,
         emergencyContact: values.emergencyContact || undefined,
@@ -138,16 +135,6 @@ function EditDriverPage() {
             type="email"
             value={values.email ?? ""}
             onChange={(e) => setValues({ ...values, email: e.target.value })}
-            className={inp}
-          />
-        </F>
-        <F label="Safety Score" error={errors.safetyScore}>
-          <input
-            type="number"
-            min={0}
-            max={100}
-            value={values.safetyScore}
-            onChange={(e) => setValues({ ...values, safetyScore: Number(e.target.value) })}
             className={inp}
           />
         </F>

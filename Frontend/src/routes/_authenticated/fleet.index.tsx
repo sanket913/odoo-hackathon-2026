@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { vehicleApi } from "@/lib/api/services";
 import { PageHeader } from "@/components/common/states";
 import { DataTable, type DataTableColumn } from "@/components/common/data-table";
@@ -8,14 +8,28 @@ import { formatCurrency, formatNumber, formatDate } from "@/lib/utils/format";
 import { VEHICLE_TYPE_LABELS } from "@/lib/constants";
 import { Plus } from "lucide-react";
 import type { Vehicle } from "@/types/domain";
+import { useAuth } from "@/lib/auth/auth-context";
+import { invalidateVehicleDomain } from "@/lib/invalidation";
+import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/fleet")({
+export const Route = createFileRoute("/_authenticated/fleet/")({
   head: () => ({ meta: [{ title: "Fleet — TransitOps" }] }),
   component: FleetPage,
 });
 
 function FleetPage() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const isAdmin = user?.role === "admin";
   const q = useQuery({ queryKey: ["vehicles"], queryFn: vehicleApi.list });
+  const retireMut = useMutation({
+    mutationFn: vehicleApi.retire,
+    onSuccess: () => {
+      invalidateVehicleDomain(qc);
+      toast.success("Vehicle retired");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to retire vehicle"),
+  });
 
   const columns: DataTableColumn<Vehicle>[] = [
     {
@@ -80,15 +94,29 @@ function FleetPage() {
     {
       key: "actions",
       header: "",
-      className: "w-28 text-right",
+      className: "text-right",
       render: (v) => (
-        <Link
-          to="/fleet/$vehicleId/edit"
-          params={{ vehicleId: v.id }}
-          className="text-xs text-brand hover:underline"
-        >
-          Edit
-        </Link>
+        <div className="flex justify-end gap-2">
+          <Link
+            to="/fleet/$vehicleId/edit"
+            params={{ vehicleId: v.id }}
+            className="text-xs text-brand hover:underline"
+          >
+            Edit
+          </Link>
+          {isAdmin && v.status !== "retired" && (
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm(`Retire ${v.registrationNumber}?`)) retireMut.mutate(v.id);
+              }}
+              disabled={retireMut.isPending}
+              className="text-xs text-destructive hover:underline disabled:opacity-50"
+            >
+              Delete
+            </button>
+          )}
+        </div>
       ),
     },
   ];

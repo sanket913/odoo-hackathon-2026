@@ -1,19 +1,33 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { driverApi } from "@/lib/api/services";
 import { PageHeader } from "@/components/common/states";
 import { DataTable, type DataTableColumn } from "@/components/common/data-table";
 import { DriverStatusBadge, LicenceBadge } from "@/components/common/status-badges";
 import { formatDate, daysUntil, pct } from "@/lib/utils/format";
 import type { Driver } from "@/types/domain";
+import { useAuth } from "@/lib/auth/auth-context";
+import { invalidateDriverDomain } from "@/lib/invalidation";
+import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/drivers")({
+export const Route = createFileRoute("/_authenticated/drivers/")({
   head: () => ({ meta: [{ title: "Drivers — TransitOps" }] }),
   component: DriversPage,
 });
 
 function DriversPage() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const isAdmin = user?.role === "admin";
   const q = useQuery({ queryKey: ["drivers"], queryFn: driverApi.list });
+  const deleteMut = useMutation({
+    mutationFn: driverApi.remove,
+    onSuccess: () => {
+      invalidateDriverDomain(qc);
+      toast.success("Driver suspended");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to suspend driver"),
+  });
 
   const columns: DataTableColumn<Driver>[] = [
     {
@@ -65,13 +79,34 @@ function DriversPage() {
       header: "",
       className: "text-right",
       render: (d) => (
-        <Link
-          to="/drivers/$driverId"
-          params={{ driverId: d.id }}
-          className="text-xs text-brand hover:underline"
-        >
-          View
-        </Link>
+        <div className="flex justify-end gap-2">
+          <Link
+            to="/drivers/$driverId"
+            params={{ driverId: d.id }}
+            className="text-xs text-brand hover:underline"
+          >
+            View
+          </Link>
+          <Link
+            to="/drivers/$driverId/edit"
+            params={{ driverId: d.id }}
+            className="text-xs text-brand hover:underline"
+          >
+            Edit
+          </Link>
+          {isAdmin && d.status !== "suspended" && (
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm(`Suspend ${d.fullName}?`)) deleteMut.mutate(d.id);
+              }}
+              disabled={deleteMut.isPending}
+              className="text-xs text-destructive hover:underline disabled:opacity-50"
+            >
+              Delete
+            </button>
+          )}
+        </div>
       ),
     },
   ];

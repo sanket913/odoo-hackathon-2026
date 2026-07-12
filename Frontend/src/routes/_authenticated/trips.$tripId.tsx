@@ -8,6 +8,8 @@ import { formatDateTime, formatNumber, formatCurrency } from "@/lib/utils/format
 import { ApiRuleError } from "@/lib/api/client";
 import { toast } from "sonner";
 import type { TripStatus } from "@/types/domain";
+import { useAuth } from "@/lib/auth/auth-context";
+import { invalidateTripDomain } from "@/lib/invalidation";
 
 export const Route = createFileRoute("/_authenticated/trips/$tripId")({
   head: () => ({ meta: [{ title: "Trip — TransitOps" }] }),
@@ -20,6 +22,8 @@ function TripDetailPage() {
   const { tripId } = Route.useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
 
   const tQ = useQuery({ queryKey: ["trip", tripId], queryFn: () => tripApi.get(tripId) });
   const vQ = useQuery({ queryKey: ["vehicles"], queryFn: vehicleApi.list });
@@ -62,6 +66,15 @@ function TripDetailPage() {
     },
     onError: (e) => toast.error(e instanceof ApiRuleError ? e.message : "Cancel failed"),
   });
+  const deleteMut = useMutation({
+    mutationFn: () => tripApi.remove(tripId),
+    onSuccess: () => {
+      invalidateTripDomain(qc);
+      toast.success("Trip deleted");
+      navigate({ to: "/trips" });
+    },
+    onError: (e) => toast.error(e instanceof ApiRuleError ? e.message : "Delete failed"),
+  });
 
   if (tQ.isLoading) return <div className="text-sm text-muted-foreground">Loading…</div>;
   if (tQ.error || !tQ.data) return <ErrorState onRetry={() => tQ.refetch()} />;
@@ -81,6 +94,14 @@ function TripDetailPage() {
         description={`${t.source} → ${t.destination}`}
         actions={
           <div className="flex gap-2">
+            {t.status === "draft" && (
+              <button
+                onClick={() => navigate({ to: "/trips/$tripId/edit", params: { tripId } })}
+                className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+              >
+                Edit
+              </button>
+            )}
             {t.status === "draft" && (
               <button
                 onClick={() => dispatchMut.mutate()}
@@ -107,6 +128,25 @@ function TripDetailPage() {
                 className="rounded-md border border-destructive/40 px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10"
               >
                 Cancel
+              </button>
+            )}
+            {isAdmin && t.status !== "completed" && (
+              <button
+                onClick={() => {
+                  const action = t.status === "dispatched" ? "cancel" : "delete";
+                  if (
+                    confirm(
+                      `${action === "cancel" ? "Cancel" : "Delete"} ${t.tripNumber}?${
+                        t.status === "dispatched" ? " Vehicle and driver will be released." : ""
+                      }`,
+                    )
+                  )
+                    deleteMut.mutate();
+                }}
+                disabled={deleteMut.isPending}
+                className="rounded-md border border-destructive/40 px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-60"
+              >
+                Delete
               </button>
             )}
             <button

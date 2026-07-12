@@ -3,7 +3,9 @@ import type { UserRole } from "@/types/domain";
 export type Module =
   | "dashboard"
   | "live_operations"
+  | "dispatch_intelligence"
   | "fleet"
+  | "fleet_health"
   | "drivers"
   | "trips"
   | "maintenance"
@@ -24,7 +26,9 @@ const MATRIX: Record<UserRole, Record<Module, PermissionLevel>> = {
   admin: {
     dashboard: "admin",
     live_operations: "admin",
+    dispatch_intelligence: "admin",
     fleet: "admin",
+    fleet_health: "admin",
     drivers: "admin",
     trips: "admin",
     maintenance: "admin",
@@ -36,7 +40,9 @@ const MATRIX: Record<UserRole, Record<Module, PermissionLevel>> = {
   fleet_manager: {
     dashboard: "view",
     live_operations: "view",
+    dispatch_intelligence: "view",
     fleet: "edit",
+    fleet_health: "operate",
     drivers: "view",
     trips: "view",
     maintenance: "operate",
@@ -48,7 +54,9 @@ const MATRIX: Record<UserRole, Record<Module, PermissionLevel>> = {
   dispatcher: {
     dashboard: "view",
     live_operations: "operate",
+    dispatch_intelligence: "operate",
     fleet: "view",
+    fleet_health: "view",
     drivers: "view",
     trips: "operate",
     maintenance: "view",
@@ -60,7 +68,9 @@ const MATRIX: Record<UserRole, Record<Module, PermissionLevel>> = {
   safety_officer: {
     dashboard: "view",
     live_operations: "view",
+    dispatch_intelligence: "view",
     fleet: "view",
+    fleet_health: "view",
     drivers: "operate",
     trips: "view",
     maintenance: "view",
@@ -72,7 +82,9 @@ const MATRIX: Record<UserRole, Record<Module, PermissionLevel>> = {
   financial_analyst: {
     dashboard: "view",
     live_operations: "view",
+    dispatch_intelligence: "view",
     fleet: "view",
+    fleet_health: "view",
     drivers: "view",
     trips: "view",
     maintenance: "view",
@@ -96,7 +108,9 @@ export function getPermissionMatrix(): Record<UserRole, Record<Module, Permissio
 export const MODULES: Module[] = [
   "dashboard",
   "live_operations",
+  "dispatch_intelligence",
   "fleet",
+  "fleet_health",
   "drivers",
   "trips",
   "maintenance",
@@ -109,7 +123,9 @@ export const MODULES: Module[] = [
 export const MODULE_LABELS: Record<Module, string> = {
   dashboard: "Dashboard",
   live_operations: "Live Operations",
+  dispatch_intelligence: "Dispatch Intelligence",
   fleet: "Fleet",
+  fleet_health: "Fleet Health",
   drivers: "Drivers",
   trips: "Trips",
   maintenance: "Maintenance",

@@ -8,6 +8,8 @@ import { SERVICE_TYPE_LABELS } from "@/lib/constants";
 import { formatDate, formatCurrency } from "@/lib/utils/format";
 import { toast } from "sonner";
 import { ApiRuleError } from "@/lib/api/client";
+import { useAuth } from "@/lib/auth/auth-context";
+import { invalidateMaintenanceDomain } from "@/lib/invalidation";
 
 export const Route = createFileRoute("/_authenticated/maintenance/$maintenanceId")({
   head: () => ({ meta: [{ title: "Maintenance — TransitOps" }] }),
@@ -18,6 +20,8 @@ function MaintenanceDetailPage() {
   const { maintenanceId } = Route.useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const mQ = useQuery({
     queryKey: ["maintenance", maintenanceId],
     queryFn: () => maintenanceApi.get(maintenanceId),
@@ -50,6 +54,16 @@ function MaintenanceDetailPage() {
     },
     onError: (e) => toast.error(e instanceof ApiRuleError ? e.message : "Failed"),
   });
+  const deleteMut = useMutation({
+    mutationFn: () => maintenanceApi.remove(maintenanceId),
+    onSuccess: () => {
+      invalidateMaintenanceDomain(qc);
+      toast.success("Maintenance record deleted");
+      navigate({ to: "/maintenance" });
+    },
+    onError: (e) =>
+      toast.error(e instanceof ApiRuleError ? e.message : "Failed to delete maintenance record"),
+  });
 
   if (mQ.isLoading) return <div className="text-sm text-muted-foreground">Loading…</div>;
   if (mQ.error || !mQ.data) return <ErrorState onRetry={() => mQ.refetch()} />;
@@ -72,6 +86,19 @@ function MaintenanceDetailPage() {
           <div className="flex gap-2">
             {(m.status === "open" || m.status === "in_progress") && (
               <button
+                onClick={() =>
+                  navigate({
+                    to: "/maintenance/$maintenanceId/edit",
+                    params: { maintenanceId },
+                  })
+                }
+                className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+              >
+                Edit
+              </button>
+            )}
+            {(m.status === "open" || m.status === "in_progress") && (
+              <button
                 onClick={() => {
                   setCloseVals({ ...closeVals, finalCost: m.cost });
                   setShowClose(true);
@@ -79,6 +106,17 @@ function MaintenanceDetailPage() {
                 className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
               >
                 Close maintenance
+              </button>
+            )}
+            {isAdmin && m.status !== "completed" && (
+              <button
+                onClick={() => {
+                  if (confirm(`Delete ${m.maintenanceNumber}?`)) deleteMut.mutate();
+                }}
+                disabled={deleteMut.isPending}
+                className="rounded-md border border-destructive/40 px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-60"
+              >
+                Delete
               </button>
             )}
             <button

@@ -29,7 +29,6 @@ function NewDriverPage() {
     licenceExpiry: new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 10),
     contactNumber: "",
     email: "",
-    safetyScore: 90,
     region: "west",
     status: "available" as Driver["status"],
     emergencyContact: "",
@@ -38,7 +37,7 @@ function NewDriverPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const mut = useMutation({
-    mutationFn: (input: Omit<Driver, "id" | "createdAt" | "tripCompletionRate">) =>
+    mutationFn: (input: Omit<Driver, "id" | "createdAt" | "tripCompletionRate" | "safetyScore">) =>
       driverApi.create(input),
     onSuccess: (d) => {
       invalidateDriverDomain(qc);
@@ -53,8 +52,6 @@ function NewDriverPage() {
     if (!values.fullName.trim()) next.fullName = "Name is required.";
     if (!values.licenceNumber.trim()) next.licenceNumber = "Licence number is required.";
     if (!values.contactNumber.trim()) next.contactNumber = "Contact number is required.";
-    if (values.safetyScore < 0 || values.safetyScore > 100)
-      next.safetyScore = "Score must be 0-100.";
     setErrors(next);
     if (Object.keys(next).length) return;
     try {
@@ -130,16 +127,6 @@ function NewDriverPage() {
             type="email"
             value={values.email}
             onChange={(e) => setValues({ ...values, email: e.target.value })}
-            className={inp}
-          />
-        </F>
-        <F label="Safety Score" error={errors.safetyScore}>
-          <input
-            type="number"
-            min={0}
-            max={100}
-            value={values.safetyScore}
-            onChange={(e) => setValues({ ...values, safetyScore: Number(e.target.value) })}
             className={inp}
           />
         </F>

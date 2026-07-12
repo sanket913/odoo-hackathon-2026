@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { vehicleApi, driverApi, tripApi, evaluateDispatch } from "@/lib/api/services";
+import { vehicleApi, driverApi, tripApi } from "@/lib/api/services";
 import { PageHeader } from "@/components/common/states";
 import { REGIONS } from "@/lib/constants";
 import { ApiRuleError } from "@/lib/api/client";
@@ -18,6 +18,16 @@ export const Route = createFileRoute("/_authenticated/trips/new")({
 function NewTripPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const search = Route.useSearch() as Partial<{
+    vehicleId: string;
+    driverId: string;
+    source: string;
+    destination: string;
+    cargoWeightKg: number | string;
+    plannedDistanceKm: number | string;
+    expectedRevenue: number | string;
+    region: string;
+  }>;
   const vQ = useQuery({
     queryKey: queryKeys.eligibleVehicles,
     queryFn: vehicleApi.dispatchEligible,
@@ -28,16 +38,16 @@ function NewTripPage() {
   });
 
   const [v, setV] = useState({
-    source: "Gandhinagar Depot",
-    destination: "Ahmedabad Hub",
-    region: "west",
-    vehicleId: "",
-    driverId: "",
-    cargoWeightKg: 450,
+    source: search.source ?? "Gandhinagar Depot",
+    destination: search.destination ?? "Ahmedabad Hub",
+    region: search.region ?? "west",
+    vehicleId: search.vehicleId ?? "",
+    driverId: search.driverId ?? "",
+    cargoWeightKg: Number(search.cargoWeightKg ?? 450),
     cargoDescription: "",
-    plannedDistanceKm: 32,
+    plannedDistanceKm: Number(search.plannedDistanceKm ?? 32),
     plannedDepartureAt: new Date(Date.now() + 3600_000).toISOString().slice(0, 16),
-    expectedRevenue: 4500,
+    expectedRevenue: Number(search.expectedRevenue ?? 4500),
     notes: "",
   });
 
@@ -60,9 +70,7 @@ function NewTripPage() {
       }),
     enabled: !!v.vehicleId && !!v.driverId,
   });
-  const issues =
-    evalQ.data?.issues ??
-    evaluateDispatch(v.vehicleId || undefined, v.driverId || undefined, v.cargoWeightKg);
+  const issues = evalQ.data?.issues ?? [];
 
   const mut = useMutation({
     mutationFn: () =>
