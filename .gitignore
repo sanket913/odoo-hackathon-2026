@@ -1,0 +1,15 @@
+Backend/node_modules/
+Backend/dist/
+Backend/.env
+Backend/uploads/*
+!Backend/uploads/.gitkeep
+
+Frontend/node_modules/
+Frontend/.output/
+Frontend/.wrangler/
+Frontend/.tanstack/
+Frontend/.env
+Frontend/lovable-project-*.zip
+
+*.log
+coverage/
